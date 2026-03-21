@@ -97,61 +97,59 @@ module paired_mirrored_gears(teeth, phase_z, gx, gy, gear_color) {
     }
 }
 
-// --- Main part module ---
-module side_plate() {
+// Боковина машинки
+module side_plate(xyz = [0, 0, 0]) {
+    translate([xyz[0], xyz[1], xyz[2]])
     difference() {
         color(color_named("body"))
         union() {
-            // Arms to wheels
+            // Плечи
             hull() {
                 cylinder(d = 30, h = thickness, center = true);
                 translate([-wheel_dist, -pitch*3, 0]) 
                     cylinder(d = 16, h = thickness, center = true);
-                translate([wheel_dist, -pitch*3, 0])  
+                translate([fin_gear_xy[0], fin_gear_xy[1], 0])  
                     cylinder(d = 16, h = thickness, center = true);
             }
         }
         
-        // Lower arc cutout
+        // Большая окружность снизу для вырезания боковины
         color(color_named("cutter"))
         translate([0, -182, 0])
             cylinder(d = 330, h = thickness + 2, center = true);
 
-        // Holes
-        color(color_named("cutter")) {
-            // Center (motor shaft)
-            hole();
-
-            // Motor mount (16x16mm square)
-            for (pos = [[pitch, 0], [-pitch, 0], [0, pitch], [0, -pitch]]) {
-                translate([pos[0], pos[1], 0]) hole();
-            }
-
-            // Middle and wheel axle holes (middle position from mid_gear_t)
-            for (s = [-1, 1]) {
-                translate([s * mid_gear_x, mid_gear_y, 0]) hole();
-                translate([s * wheel_dist, -pitch*3, 0]) hole();
-            }
-
-            // Cross beam mounts
-            // translate([-wheel_dist/2, 10, 0]) hole();
-            // translate([wheel_dist/2, 10, 0])  hole();
+        for (s = [-1, 1]) {
+            // Отверстия под валы средних шестеренок
+            translate([s * mid_gear_xy[0], mid_gear_xy[1], 0]) hole();
+            // Отверстия под валы нижних шестеренок
+            translate([s * fin_gear_xy[0], fin_gear_xy[1], 0]) hole();
         }
+
+        // Крепление мотора: 4 отверстия - квадрат 16*16мм
+        for (pos = [[pitch, 0], [-pitch, 0], [0, pitch], [0, -pitch]]) {
+            translate([pos[0], pos[1], 0]) hole();
+        }
+
+        // Центральное отверстие под вал центральной шестерни
+        color(color_named("cutter")) {
+            hole();
+        }                
     }
 }
 
-// First side plate
 side_plate();
 
-// Gear opposite the center hole, touching the side plate on its face (same XY, offset by thickness along Z)
+// Центральная шестерня
 color(color_named("gear_bronze"))
 translate([0, 0, thickness])
     make_gear(12);
 
 center_mid_dist = gear_mesh_spacing_teeth(12, 20);
-mid_gear_xy = xy_from_angle_distance(-18, center_mid_dist);
-paired_mirrored_gears(20, -3, mid_gear_xy[0], mid_gear_xy[1], color_named("gear_middle_pair"));
-
 mid_fin_dist = gear_mesh_spacing_teeth(20, 24);
+
+mid_gear_xy = xy_from_angle_distance(-18, center_mid_dist);
 fin_gear_xy = xy_from_angle_distance(-18, center_mid_dist + mid_fin_dist);
+
+paired_mirrored_gears(20, -3, mid_gear_xy[0], mid_gear_xy[1], color_named("gear_middle_pair"));
 paired_mirrored_gears(24, 7, fin_gear_xy[0], fin_gear_xy[1], color_named("gear_bronze"));
+
