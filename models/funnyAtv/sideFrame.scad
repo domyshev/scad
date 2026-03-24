@@ -1,3 +1,5 @@
+include <perimeterPinHoles.scad>
+
 // Боковина рамы.
 module sideFrame() {
     difference() {
@@ -33,6 +35,12 @@ module sideFrame() {
         // Центральное отверстие под вал центральной шестерни
         color(getColor("cutter")) {
             legoAxisHole();
-        }                
+        }
+
+        // Vertical pin holes along outer hull perimeter (8 mm along arc), not near axle holes
+        color(getColor("cutter"))
+        for (p = perimeter_pin_hole_positions()) {
+            translate([p[0], p[1], 0]) legoVerticalPinHole();
+        }
     }
 }

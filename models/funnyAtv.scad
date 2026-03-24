@@ -64,7 +64,6 @@ include <funnyAtv/sideFrameGears.scad>
 include <../lib/core/gears/mirroredGears.scad>
 include <../lib/core/gears/drawGearByTeeth.scad>
 include <../lib/core/lego/legoAxisHole.scad>
-include <../lib/core/lego/legoAxisHole.scad>
 include <../lib/utils/getColor.scad>
 
 // Build side frame (uses globals above + legoAxisHole(), getColor, thickness, pitch, wheel_dist)
