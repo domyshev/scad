@@ -1,3 +1,5 @@
+include <gridPinHoles.scad>
+
 // Боковина рамы.
 module sideFrame() {
     difference() {
@@ -33,6 +35,12 @@ module sideFrame() {
         // Центральное отверстие под вал центральной шестерни
         color(getColor("cutter")) {
             legoAxisHole();
+        }
+
+        // Pin holes on 16×16 mm grid inside hull bounding box (axis Z); skip near axles
+        color(getColor("cutter"))
+        for (p = grid_pin_hole_positions()) {
+            translate([p[0], p[1], 0]) legoPinHole();
         }
     }
 }
