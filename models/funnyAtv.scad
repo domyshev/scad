@@ -2,9 +2,8 @@
 $fn = 160;
 thickness = 8;
 hole_d = 4.9;
-hole_d_tight = hole_d - 0.15;
-// Pin holes (grid on side frame); separate from hole_d_tight for clarity
-pin_hole = hole_d - 0.15;
+// Pin holes (grid on side frame)
+pin_hole = 4.75;
 // Minimum distance from pin center to the part outline (outer hull + bottom cut edge), mm
 pin_hole_edge_clearance = 4.2;
 pitch = 8; 
@@ -14,6 +13,9 @@ wheel_dist = pitch * 9;
 // Same module for all gears so they can mesh
 gear_module = 2;
 gear_pressure_angle = 20;
+// LEGO-style central cross cutout in gears (circumscribed Ø and arm width, mm) — see drawGear(cross_axle)
+gear_center_cross_d = 4.85;
+gear_center_cross_arm_w = 1.9;
 
 
 // Middle gear pair: one knob; left/right rotate opposite (s * angle) so both stay meshable with neighbors
