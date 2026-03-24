@@ -1,6 +1,7 @@
-// Vertical through-plate holes for LEGO-style pins along the outer boundary of the side frame hull
-// (three disks: main hub, wheel arm, lower gear pod). Spacing along arc = pitch (8 mm). Skips
-// positions too close to existing axle holes (legoAxisHole).
+// Through-edge pin holes for LEGO-style pins along the outer boundary of the side frame hull
+// (three disks: main hub, wheel arm, lower gear pod). Hole axis lies in XY, along the outward
+// normal (pins go through the thin edge / “торец”, perpendicular to the plate faces).
+// Spacing along arc = pitch (8 mm). Skips positions too close to axle holes (legoAxisHole).
 
 // Outward boundary point for the convex hull of three disks: support in direction u = (cos t, sin t).
 function _hull_support_disk_(t, c, r) = c + r * [cos(t), sin(t)];
@@ -18,12 +19,23 @@ function _polyline_len_(pts, i = 0) =
     i >= len(pts) - 1 ? 0
     : norm(pts[i + 1] - pts[i]) + _polyline_len_(pts, i + 1);
 
-// Walk open polyline pts[j..] until arc length s_rem is consumed; return interpolated point.
-function _point_at_arc_(pts, j, s_rem) =
-    j >= len(pts) - 1 ? pts[len(pts) - 1]
+// Unit outward normal for an edge of a CCW-closed polygon (interior on the left of the walk).
+function _edge_outward_normal_(pa, pb) =
+    let(e = pb - pa)
+    let(len = norm(e))
+    len < 1e-9 ? [1, 0] : [e[1], -e[0]] / len;
+
+// Walk polyline by arc length; returns [px, py, nx, ny] with outward normal of the current edge.
+function _point_normal_at_arc_(pts, j, s_rem) =
+    j >= len(pts) - 1
+    ? let(n = _edge_outward_normal_(pts[len(pts) - 2], pts[len(pts) - 1]))
+      [pts[len(pts) - 1][0], pts[len(pts) - 1][1], n[0], n[1]]
     : let(d = norm(pts[j + 1] - pts[j]))
-        s_rem < d ? pts[j] + (s_rem / d) * (pts[j + 1] - pts[j])
-        : _point_at_arc_(pts, j + 1, s_rem - d);
+        s_rem < d
+        ? let(p = pts[j] + (s_rem / d) * (pts[j + 1] - pts[j]))
+          let(n = _edge_outward_normal_(pts[j], pts[j + 1]))
+          [p[0], p[1], n[0], n[1]]
+        : _point_normal_at_arc_(pts, j + 1, s_rem - d);
 
 // Minimum distance from p to any axle center in XY (axle_holes = list of [x,y]).
 function _min_dist_to_axles_(p, axle_holes, i = 0) =
@@ -63,6 +75,7 @@ function _outside_bottom_frame_cutter_(p) =
 
 // Skip pin holes whose center is closer than pitch (8 mm) to any axle center — LEGO grid spacing.
 // Also skip centers that lie in material removed by the bottom opening cylinder.
+// Each entry is [px, py, nx, ny] — position and outward unit normal in XY for the hole axis.
 function perimeter_pin_hole_positions(angular_step = 0.25) =
     let(pts = _frame_boundary_polyline_(angular_step))
     let(L = _polyline_len_(pts))
@@ -71,13 +84,21 @@ function perimeter_pin_hole_positions(angular_step = 0.25) =
     [
         for (k = [0 : n - 1])
             let(s = k * pitch + pitch / 2)
-            let(p = _point_at_arc_(pts, 0, s))
+            let(q = _point_normal_at_arc_(pts, 0, s))
+            let(p = [q[0], q[1]])
             if (_min_dist_to_axles_(p, axles) >= pitch && _outside_bottom_frame_cutter_(p))
-                p
+                q
     ];
 
-module legoVerticalPinHole(h = undef, d = undef) {
+// Cylinder axis along (nx, ny, 0) — through the plate edge (perpendicular to Z / face normals).
+module legoEdgePinHole(px, py, nx, ny, h = undef, d = undef) {
     _h = is_undef(h) ? thickness + 2 : h;
     _d = is_undef(d) ? hole_d : d;
-    cylinder(d = _d, h = _h, center = true);
+    multmatrix([
+            [-ny, 0, nx, px],
+            [nx, 0, ny, py],
+            [0, 1, 0, 0],
+            [0, 0, 0, 1],
+        ])
+        cylinder(d = _d, h = _h, center = true);
 }

@@ -37,10 +37,10 @@ module sideFrame() {
             legoAxisHole();
         }
 
-        // Vertical pin holes along outer hull perimeter (8 mm along arc), not near axle holes
+        // Edge pin holes (axis in XY, through the thin side) along outer hull, 8 mm along arc
         color(getColor("cutter"))
-        for (p = perimeter_pin_hole_positions()) {
-            translate([p[0], p[1], 0]) legoVerticalPinHole();
+        for (q = perimeter_pin_hole_positions()) {
+            legoEdgePinHole(q[0], q[1], q[2], q[3]);
         }
     }
 }
