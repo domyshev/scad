@@ -29,7 +29,7 @@ module sideFrame() {
 
         // Крепление мотора: 4 отверстия - квадрат 16*16мм
         for (pos = [[pitch, 0], [-pitch, 0], [0, pitch], [0, -pitch]]) {
-            translate([pos[0], pos[1], 0]) legoAxisHole();
+            translate([pos[0], pos[1], 0]) legoPinHole();
         }
 
         // Центральное отверстие под вал центральной шестерни

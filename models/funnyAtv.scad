@@ -1,9 +1,9 @@
 // Settings
 $fn = 160;
 thickness = 8;
-hole_d = 4.9;
+hole_d = 4.95;
 // Pin holes (grid on side frame)
-pin_hole = 4.75;
+pin_hole = 4.8;
 // Minimum distance from pin center to the part outline (outer hull + bottom cut edge), mm
 pin_hole_edge_clearance = 4.2;
 pitch = 8; 
@@ -14,8 +14,8 @@ wheel_dist = pitch * 9;
 gear_module = 2;
 gear_pressure_angle = 20;
 // LEGO-style central cross cutout in gears (circumscribed Ø and arm width, mm) — see drawGear(cross_axle)
-gear_center_cross_d = 4.85;
-gear_center_cross_arm_w = 1.9;
+gear_center_cross_d = 4.8;
+gear_center_cross_arm_w = 1.85;
 
 // Sample brick beside the model: test LEGO pins/axles (round holes through thickness), see lib/samples/sample_cube_fit_test.scad
 sample_cube_enabled = true;
@@ -87,9 +87,9 @@ include <../lib/samples/sample_cube_fit_test.scad>
 // Build side frame (uses globals above + legoAxisHole(), getColor, thickness, pitch, wheel_dist)
 sideFrame();
 // Строим шестерни
-sideFrameGears();
+//sideFrameGears();
 
-if (sample_cube_enabled) sample_cube_fit_test();
+//if (sample_cube_enabled) sample_cube_fit_test();
 
 
 
