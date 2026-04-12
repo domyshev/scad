@@ -61,6 +61,11 @@ module connectorFrame() {
                                     );  
                     }
                 }
+                // Center cutout: square cross-section (tune third axis later)
+                cube(
+                    [connectorFrameWidth - generalThickness * 4, connectorFrameDepth - generalThickness * 2, generalThickness + 2],
+                    center = true
+                );
                 connectorFramePinHoleCutters(-connectorFrameWidth / 2 + generalPinHoleWidth / 2 - 1, 1);
                 connectorFramePinHoleCutters(connectorFrameWidth / 2 - generalPinHoleWidth / 2 + 1, -1);
             }
