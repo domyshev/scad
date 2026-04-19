@@ -5,7 +5,7 @@ pin_plan_w = 7.2;
 pin_plan_h = 3.6;
 // Corner radius: must be < min(w,h)/2 (here h/2 = 1.8) so a thin flat remains on the short sides.
 pin_corner_r = 1.75;
-pin_height = 3;
+pin_height = 4;
 
 // Half-distance from Z-axis to each pin center (pair is symmetric through origin).
 pin_offset_from_axis = 12.5;
