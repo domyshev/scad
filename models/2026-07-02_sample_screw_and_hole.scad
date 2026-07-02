@@ -12,11 +12,10 @@ plate_d  = 30;
 plate_h  = 10;
 
 // Параметры резьбы (одинаковые для отверстия и болта)
-bolt_d     = 10;
-bolt_pitch = 1.5;
-bolt_h     = plate_h;
-bolt_depth = 1.2;
-bolt_land  = 0.7;   // доля шага под выступ резьбы (0..1)
+bolt_d        = 10;
+bolt_pitch    = 1.5;
+bolt_h        = plate_h;
+bolt_thickness = 1.5;   // толщина «проволоки» резьбы
 
 // Смещение болта по Z: верхняя грань пластины
 z_offset = plate_h;
@@ -28,10 +27,10 @@ difference() {
 
     // Отверстие с резьбой по центру
     translate([plate_w / 2, plate_d / 2, -0.05])
-        internalThread(d = bolt_d, pitch = bolt_pitch, h = bolt_h + 0.1, depth = bolt_depth, land = bolt_land);
+        internalThread(d = bolt_d, pitch = bolt_pitch, h = bolt_h + 0.1, thickness = bolt_thickness);
 }
 
 // Болт — серо-стальной, вкручен сверху
 color("#6b7b8d")
 translate([plate_w / 2, plate_d / 2, z_offset])
-    externalThread(d = bolt_d, pitch = bolt_pitch, h = bolt_h, depth = bolt_depth, land = bolt_land);
+    externalThread(d = bolt_d, pitch = bolt_pitch, h = bolt_h, thickness = bolt_thickness);
