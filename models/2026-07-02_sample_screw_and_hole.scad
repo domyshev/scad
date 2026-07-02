@@ -1,7 +1,7 @@
 // Тест: болт M10 в отверстии — проверка совместимости
 // Пластина 30x30x10 с отверстием по центру, в него вкручен болт
 
-$fn = 128;
+$fn = 256;
 
 use <../lib/core/threads/internalThread.scad>
 use <../lib/core/threads/externalThread.scad>
@@ -16,6 +16,7 @@ bolt_d     = 10;
 bolt_pitch = 1.5;
 bolt_h     = plate_h;
 bolt_depth = 1.2;
+bolt_land  = 0.7;   // доля шага под выступ резьбы (0..1)
 
 // Смещение болта по Z: верхняя грань пластины
 z_offset = plate_h;
@@ -27,10 +28,10 @@ difference() {
 
     // Отверстие с резьбой по центру
     translate([plate_w / 2, plate_d / 2, -0.05])
-        internalThread(d = bolt_d, pitch = bolt_pitch, h = bolt_h + 0.1, depth = bolt_depth);
+        internalThread(d = bolt_d, pitch = bolt_pitch, h = bolt_h + 0.1, depth = bolt_depth, land = bolt_land);
 }
 
 // Болт — серо-стальной, вкручен сверху
 color("#6b7b8d")
 translate([plate_w / 2, plate_d / 2, z_offset])
-    externalThread(d = bolt_d, pitch = bolt_pitch, h = bolt_h, depth = bolt_depth);
+    externalThread(d = bolt_d, pitch = bolt_pitch, h = bolt_h, depth = bolt_depth, land = bolt_land);
