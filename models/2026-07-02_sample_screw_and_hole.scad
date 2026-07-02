@@ -1,7 +1,7 @@
 // Тест: болт M10 в отверстии — проверка совместимости
 // Пластина 30x30x10 с отверстием по центру, в него вкручен болт
 
-$fn = 128;
+$fn = 64;
 preview_fast = $preview;
 
 // Переключатели деталей для отдельного экспорта в STL.
@@ -19,6 +19,20 @@ plate_h  = 10;
 bolt_d     = 10;     // номинальный диаметр (M10)
 bolt_pitch = 1.5;    // шаг резьбы
 bolt_h     = plate_h;
+
+// Крестовая канавка сверху болта под отвертку.
+driver_slot_enabled = true;
+driver_slot_length  = bolt_d * 0.8;
+driver_slot_width   = 1.8;
+driver_slot_depth   = 1.2;
+
+module cross_driver_slot(length, width, depth, z_top) {
+    for (angle = [0, 90]) {
+        rotate([0, 0, angle])
+            translate([0, 0, z_top - depth / 2 + 0.05])
+                cube([length, width, depth + 0.1], center = true);
+    }
+}
 
 // Пластина (крышка) — синяя
 if (show_plate) {
@@ -42,11 +56,22 @@ if (show_plate) {
 if (show_bolt) {
     color("#6b7b8d")
     translate([plate_w / 2, plate_d / 2, plate_h])
-        metric_thread(
-            diameter = bolt_d,
-            pitch = bolt_pitch,
-            length = bolt_h,
-            internal = false,
-            test = preview_fast
-        );
+        difference() {
+            metric_thread(
+                diameter = bolt_d,
+                pitch = bolt_pitch,
+                length = bolt_h,
+                internal = false,
+                test = preview_fast
+            );
+
+            if (driver_slot_enabled) {
+                cross_driver_slot(
+                    length = driver_slot_length,
+                    width = driver_slot_width,
+                    depth = driver_slot_depth,
+                    z_top = bolt_h
+                );
+            }
+        }
 }
