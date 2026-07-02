@@ -7,15 +7,13 @@
 module threaded_hole(d = 10, pitch = 1.5, h = 5) {
     $fn = max($fn, 48);
 
-    D = d;                       // номинальный диаметр
-    P = pitch;                   // шаг
-    D1 = D - 1.082532 * P;       // внутренний диаметр (по впадинам)
+    D = d;
+    P = pitch;
+    D1 = D - 1.082532 * P;
 
     difference() {
-        // Отверстие номинального диаметра
         cylinder(d = D, h = h + 0.05);
 
-        // Спиральная канавка резьбы
         translate([0, 0, -P/2])
         linear_extrude(
             height = h + P,
@@ -23,13 +21,65 @@ module threaded_hole(d = 10, pitch = 1.5, h = 5) {
             slices = ceil((h + P) / P * 24),
             convexity = 5
         )
-        // Треугольный профиль канавки
         polygon(points = [
             [D1/2 - 0.05, -P/2],
             [D/2 + 0.05, -P/4],
             [D/2 + 0.05,  P/4],
             [D1/2 - 0.05,  P/2]
         ]);
+    }
+}
+
+// Модуль внешней резьбы (метрическая)
+module external_thread(d = 10, pitch = 1.5, h = 10) {
+    $fn = max($fn, 48);
+
+    D = d;
+    P = pitch;
+    D1 = D - 1.082532 * P;
+
+    union() {
+        // Стержень по внутреннему диаметру резьбы
+        cylinder(d = D1, h = h);
+
+        // Спиральные выступы резьбы
+        translate([0, 0, -P/2])
+        linear_extrude(
+            height = h + P,
+            twist = 360 * (h + P) / P,
+            slices = ceil((h + P) / P * 24),
+            convexity = 5
+        )
+        polygon(points = [
+            [D1/2, -P/2],
+            [D/2 + 0.05, -P/4],
+            [D/2 + 0.05,  P/4],
+            [D1/2,  P/2]
+        ]);
+    }
+}
+
+// Винт-потай M10 со шлицем под плоскую отвертку
+module countersunk_screw(d = 10, pitch = 1.5, thread_h = lid_h) {
+    Dk = 18;    // диаметр головки
+    K  = 4;     // высота головки
+
+    slot_w = 2;   // ширина шлица
+    slot_d = 2;   // глубина шлица
+
+    union() {
+        // Резьбовая часть (входит в отверстие крышки)
+        translate([0, 0, -thread_h])
+            external_thread(d = d, pitch = pitch, h = thread_h);
+
+        // Головка-потай — конус от Dk до d
+        difference() {
+            cylinder(d1 = Dk, d2 = d, h = K);
+
+            // Шлиц под плоскую отвертку
+            translate([0, 0, K - slot_d])
+                cube([Dk - 4, slot_w, slot_d + 0.1], center = true);
+        }
     }
 }
 
@@ -93,3 +143,8 @@ difference() {
     translate([outer_w / 2, 15, outer_h - 0.05])
         threaded_hole(d = 10, pitch = 1.5, h = lid_h + 0.1);
 }
+
+// Винт-потай M10 — вкручен в отверстие
+color("#6b7b8d")  // серо-стальной
+translate([outer_w / 2, 15, outer_h + lid_h])
+    countersunk_screw(d = 10, pitch = 1.5, thread_h = lid_h);
