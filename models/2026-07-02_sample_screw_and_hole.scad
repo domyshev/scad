@@ -2,6 +2,11 @@
 // Пластина 30x30x10 с отверстием по центру, в него вкручен болт
 
 $fn = 128;
+preview_fast = $preview;
+
+// Переключатели деталей для отдельного экспорта в STL.
+show_plate = true;
+show_bolt = true;
 
 use <../lib/core/threads/threads.scad>
 
@@ -16,16 +21,32 @@ bolt_pitch = 1.5;    // шаг резьбы
 bolt_h     = plate_h;
 
 // Пластина (крышка) — синяя
-color("#4a90d9")
-difference() {
-    cube([plate_w, plate_d, plate_h]);
+if (show_plate) {
+    color("#4a90d9")
+    difference() {
+        cube([plate_w, plate_d, plate_h]);
 
-    // Отверстие с резьбой по центру
-    translate([plate_w / 2, plate_d / 2, -0.05])
-        metric_thread(diameter = bolt_d, pitch = bolt_pitch, length = bolt_h + 0.1, internal = true);
+        // Отверстие с резьбой по центру
+        translate([plate_w / 2, plate_d / 2, -0.05])
+            metric_thread(
+                diameter = bolt_d,
+                pitch = bolt_pitch,
+                length = bolt_h + 0.1,
+                internal = true,
+                test = preview_fast
+            );
+    }
 }
 
 // Болт — серо-стальной, вкручен сверху
-color("#6b7b8d")
-translate([plate_w / 2, plate_d / 2, plate_h])
-    metric_thread(diameter = bolt_d, pitch = bolt_pitch, length = bolt_h, internal = false);
+if (show_bolt) {
+    color("#6b7b8d")
+    translate([plate_w / 2, plate_d / 2, plate_h])
+        metric_thread(
+            diameter = bolt_d,
+            pitch = bolt_pitch,
+            length = bolt_h,
+            internal = false,
+            test = preview_fast
+        );
+}
