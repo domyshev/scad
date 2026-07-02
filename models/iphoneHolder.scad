@@ -3,13 +3,15 @@
 // Толщина стенок: 5 мм
 // Внутри полый (открытый сверху)
 
-// Модуль внутренней резьбы (метрическая)
+// Модуль внутренней резьбы (утолщенная)
 module threaded_hole(d = 10, pitch = 1.5, h = 5) {
     $fn = max($fn, 48);
 
     D = d;
     P = pitch;
-    D1 = D - 1.082532 * P;
+    thread_depth = 1.2;       // толщина выступа резьбы
+    inner_r = D/2 - thread_depth;
+    outer_r = D/2;
 
     difference() {
         cylinder(d = D, h = h + 0.05);
@@ -22,25 +24,27 @@ module threaded_hole(d = 10, pitch = 1.5, h = 5) {
             convexity = 5
         )
         polygon(points = [
-            [D1/2 - 0.05, -P/2],
-            [D/2 + 0.05, -P/4],
-            [D/2 + 0.05,  P/4],
-            [D1/2 - 0.05,  P/2]
+            [inner_r - 0.05, -P/2],
+            [outer_r + 0.05, -P/4],
+            [outer_r + 0.05,  P/4],
+            [inner_r - 0.05,  P/2]
         ]);
     }
 }
 
-// Модуль внешней резьбы (метрическая)
+// Модуль внешней резьбы (утолщенная)
 module external_thread(d = 10, pitch = 1.5, h = 10) {
     $fn = max($fn, 48);
 
     D = d;
     P = pitch;
-    D1 = D - 1.082532 * P;
+    thread_depth = 1.2;
+    inner_r = D/2 - thread_depth;
+    outer_r = D/2;
 
     union() {
         // Стержень по внутреннему диаметру резьбы
-        cylinder(d = D1, h = h);
+        cylinder(d = 2 * inner_r, h = h);
 
         // Спиральные выступы резьбы
         translate([0, 0, -P/2])
@@ -51,35 +55,27 @@ module external_thread(d = 10, pitch = 1.5, h = 10) {
             convexity = 5
         )
         polygon(points = [
-            [D1/2, -P/2],
-            [D/2 + 0.05, -P/4],
-            [D/2 + 0.05,  P/4],
-            [D1/2,  P/2]
+            [inner_r, -P/2],
+            [outer_r + 0.05, -P/4],
+            [outer_r + 0.05,  P/4],
+            [inner_r,  P/2]
         ]);
     }
 }
 
-// Винт-потай M10 со шлицем под плоскую отвертку
+// Винт-потай M10 — цилиндр с резьбой и шлицем под плоскую отвертку
 module countersunk_screw(d = 10, pitch = 1.5, thread_h = lid_h) {
-    Dk = 18;    // диаметр головки
-    K  = 4;     // высота головки
-
     slot_w = 2;   // ширина шлица
     slot_d = 2;   // глубина шлица
 
-    union() {
-        // Резьбовая часть (входит в отверстие крышки)
+    difference() {
+        // Цилиндр с внешней резьбой (уходит вниз от z=0)
         translate([0, 0, -thread_h])
             external_thread(d = d, pitch = pitch, h = thread_h);
 
-        // Головка-потай — конус от Dk до d
-        difference() {
-            cylinder(d1 = Dk, d2 = d, h = K);
-
-            // Шлиц под плоскую отвертку
-            translate([0, 0, K - slot_d])
-                cube([Dk - 4, slot_w, slot_d + 0.1], center = true);
-        }
+        // Шлиц под плоскую отвертку на верхней плоскости
+        translate([0, 0, -slot_d])
+            cube([d - 3, slot_w, slot_d + 0.1], center = true);
     }
 }
 
