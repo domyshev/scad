@@ -20,6 +20,10 @@ bolt_d     = 10;     // номинальный диаметр (M10)
 bolt_pitch = 1.5;    // шаг резьбы
 bolt_h     = plate_h;
 
+// FDM/PETG needs extra clearance for printed threads.
+thread_fit_clearance = 0.4; // added to the internal thread diameter
+thread_leadin        = 2;   // chamfer both ends so the thread can start cleanly
+
 // Крестовая канавка сверху болта под отвертку.
 driver_slot_enabled = true;
 driver_slot_length  = bolt_d * 0.8;
@@ -43,10 +47,11 @@ if (show_plate) {
         // Отверстие с резьбой по центру
         translate([plate_w / 2, plate_d / 2, -0.05])
             metric_thread(
-                diameter = bolt_d,
+                diameter = bolt_d + thread_fit_clearance,
                 pitch = bolt_pitch,
                 length = bolt_h + 0.1,
                 internal = true,
+                leadin = thread_leadin,
                 test = preview_fast
             );
     }
@@ -62,6 +67,7 @@ if (show_bolt) {
                 pitch = bolt_pitch,
                 length = bolt_h,
                 internal = false,
+                leadin = thread_leadin,
                 test = preview_fast
             );
 
