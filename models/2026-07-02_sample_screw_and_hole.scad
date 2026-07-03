@@ -22,6 +22,7 @@ bolt_h     = plate_h;
 
 // FDM/PETG needs extra clearance for printed threads.
 thread_fit_clearance = 0.4; // added to the internal thread diameter
+bolt_fit_clearance   = 0.2; // subtracted from the external bolt diameter
 thread_leadin        = 2;   // chamfer both ends so the thread can start cleanly
 
 // Крестовая канавка сверху болта под отвертку.
@@ -63,7 +64,7 @@ if (show_bolt) {
     translate([plate_w / 2, plate_d / 2, plate_h])
         difference() {
             metric_thread(
-                diameter = bolt_d,
+                diameter = bolt_d - bolt_fit_clearance,
                 pitch = bolt_pitch,
                 length = bolt_h,
                 internal = false,
