@@ -50,6 +50,27 @@ bolt_head_d = 16;
 bolt_head_h = 5;
 bolt_insert_z = box_h - bolt_thread_length;
 
+// Center top brackets: perpendicular to the long X side, so each is a 10 mm
+// thick vertical plate crossing the lid in Y. The 16 mm gap is the clear space
+// between their inner faces for clamping the vertical phone-holder plate.
+top_bracket_thickness = 10;
+top_bracket_depth = 30;
+top_bracket_height = 40;
+top_brackets_gap = 16;
+top_bracket_center_offset = top_brackets_gap / 2 + top_bracket_thickness / 2;
+top_bracket_centers_x = [
+    box_l / 2 - top_bracket_center_offset,
+    box_l / 2 + top_bracket_center_offset
+];
+top_bracket_cut_overlap = 0.2;
+top_bracket_hole_d = lid_thread_d; // smooth 10.4 mm clearance for the 9.8 mm bolt
+top_bracket_hole_gap =
+    (top_bracket_height - 2 * top_bracket_hole_d) / 3;
+top_bracket_hole_z_offsets = [
+    top_bracket_hole_gap + top_bracket_hole_d / 2,
+    top_bracket_height - top_bracket_hole_gap - top_bracket_hole_d / 2
+];
+
 // Center slot in the internal rib for fluid/air communication between chambers.
 // The rib inner height is 8.5 mm, so the 10 mm slot dimension is used as width.
 rib_slot_enabled = true;
@@ -59,14 +80,15 @@ rib_slot_cut_overlap = 0.2;
 // OpenSCAD 2021 has no native object/dictionary syntax, so this key/value list
 // is the parts object. Change true/false by part name to export or inspect sides.
 parts = [
-    ["bottom", true],
+    ["bottom", false],
     ["top",    true],
-    ["front",  true],
-    ["back",   true],
-    ["left",   true],
-    ["right",  true],
-    ["rib",    true],
-    ["bolt_left_of_rib",  false],
+    ["front",  false],
+    ["back",   false],
+    ["left",   false],
+    ["right",  false],
+    ["rib",    false],
+    ["top_brackets", true],
+    ["bolt_left_of_rib",  true],
     ["bolt_right_of_rib", true]
 ];
 
@@ -109,6 +131,40 @@ module hex_head_bolt() {
     }
 }
 
+module top_bracket(center_x) {
+    translate([
+        center_x - top_bracket_thickness / 2,
+        box_w / 2 - top_bracket_depth / 2,
+        box_h
+    ])
+        difference() {
+            cube([
+                top_bracket_thickness,
+                top_bracket_depth,
+                top_bracket_height
+            ]);
+
+            for (hole_z = top_bracket_hole_z_offsets) {
+                translate([
+                    -top_bracket_cut_overlap / 2,
+                    top_bracket_depth / 2,
+                    hole_z
+                ])
+                    rotate([0, 90, 0])
+                        cylinder(
+                            d = top_bracket_hole_d,
+                            h = top_bracket_thickness + top_bracket_cut_overlap
+                        );
+            }
+        }
+}
+
+module top_brackets() {
+    for (center_x = top_bracket_centers_x) {
+        top_bracket(center_x);
+    }
+}
+
 module iphone_15_pro_max_hollow_box() {
     // bottom: 159.9 x 76.7 x 4 mm
     enabled_part("bottom", [0.35, 0.45, 0.62])
@@ -124,6 +180,11 @@ module iphone_15_pro_max_hollow_box() {
                 lid_threaded_hole(position);
             }
         }
+
+    // top brackets: two 10 x 30 x 40 mm plates with a 16 mm clear gap between
+    // them, each with two smooth bolt clearance holes placed one above the other.
+    enabled_part("top_brackets", [0.35, 0.45, 0.62])
+        top_brackets();
 
     // front: length matches iPhone height, wall thickness is 4 mm
     enabled_part("front", [0.50, 0.35, 0.52])

@@ -34,12 +34,14 @@ parts = [
     ["left",   true],
     ["right",  true],
     ["rib",    true],
+    ["top_brackets", true],
     ["bolt_left_of_rib",  true],
     ["bolt_right_of_rib", true]
 ];
 ```
 
-Так можно отключать стенки, внутреннее ребро и оба болта отдельно.
+Так можно отключать стенки, внутреннее ребро, верхние кронштейны и оба болта
+отдельно.
 
 ## Ребро и прорезь
 
@@ -124,6 +126,38 @@ bolt_insert_z = box_h - bolt_thread_length;
 Резьбовая часть уходит в толщину крышки, а над верхней плоскостью торчит только
 шестигранная головка.
 
+## Верхние кронштейны
+
+На крышке есть два центральных вертикальных кронштейна. Размер каждого:
+
+```text
+толщина по X: 10 мм
+глубина по Y: 30 мм
+высота по Z:  40 мм
+```
+
+Они расположены симметрично относительно центра крышки вдоль длинной стороны
+бокса. Зазор между внутренними гранями:
+
+```scad
+top_brackets_gap = 16;
+```
+
+Так как толщина каждого кронштейна `10 мм`, центры кронштейнов находятся на
+расстоянии `26 мм` друг от друга, то есть каждый смещен от центра бокса на
+`13 мм` вдоль X. Между ними зажимается вертикальная планка держателя телефона.
+
+В каждом кронштейне два гладких отверстия без резьбы под болт такой же толщины:
+
+```scad
+top_bracket_hole_d = lid_thread_d; // 10.4 мм
+```
+
+Диаметр `10.4 мм` оставляет свободный проход для напечатанного болта с наружной
+резьбой `9.8 мм`. Отверстия расположены одно над другим по вертикали, а свободный
+материал сверху, между отверстиями и снизу распределен равномерно. При высоте
+`40 мм` вертикальный зазор получается `6.4 мм`.
+
 ## Экспорт
 
 Из корня проекта:
@@ -139,7 +173,7 @@ bolt_insert_z = box_h - bolt_thread_length;
 
 ```bash
 openscad -o stl/iphone_holder_top.stl \
-  -D 'parts=[["bottom",false],["top",true],["front",false],["back",false],["left",false],["right",false],["rib",false],["bolt_left_of_rib",false],["bolt_right_of_rib",false]]' \
+  -D 'parts=[["bottom",false],["top",true],["front",false],["back",false],["left",false],["right",false],["rib",false],["top_brackets",true],["bolt_left_of_rib",false],["bolt_right_of_rib",false]]' \
   "models/iphone_holder/2026-07-03_iphone_15_pro_max_hollow_box.scad"
 ```
 
@@ -147,6 +181,6 @@ openscad -o stl/iphone_holder_top.stl \
 
 ```bash
 openscad -o stl/iphone_holder_bolt_left.stl \
-  -D 'parts=[["bottom",false],["top",false],["front",false],["back",false],["left",false],["right",false],["rib",false],["bolt_left_of_rib",true],["bolt_right_of_rib",false]]' \
+  -D 'parts=[["bottom",false],["top",false],["front",false],["back",false],["left",false],["right",false],["rib",false],["top_brackets",false],["bolt_left_of_rib",true],["bolt_right_of_rib",false]]' \
   "models/iphone_holder/2026-07-03_iphone_15_pro_max_hollow_box.scad"
 ```
