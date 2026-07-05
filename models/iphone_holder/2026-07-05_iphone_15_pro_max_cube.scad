@@ -104,6 +104,8 @@ bracket_side_hole_z_offsets = [
 // Only the two outer pieces of the rib parallel to the long X side are
 // trapezoids in X/Z side view, so the fill holes do not pour onto vertical rib
 // walls.
+// Other rib pieces are top-wide lid supports. Their sides curve inward, but
+// every local segment keeps at least 50 degrees from the print bed.
 rib_x_positions = [
     base_x / 3,
     2 * base_x / 3
@@ -115,16 +117,47 @@ rib_cutout_enabled = true;
 rib_cutout_span = 30;
 rib_cutout_overlap = 0.2;
 rib_trapezoid_slice_h = 0.1;
+rib_support_min_angle_from_bed = 50;
+rib_support_curve_power = 1.5;
+rib_support_steps = 6;
+rib_support_slice_h = 0.15;
+rib_support_min_bottom_span = wall;
+
+function rib_support_max_run_per_side() =
+    inner_h / tan(rib_support_min_angle_from_bed) / rib_support_curve_power;
+
+function rib_support_run_per_side(top_span) =
+    min(
+        max(0, (top_span - rib_support_min_bottom_span) / 2),
+        rib_support_max_run_per_side()
+    );
+
+function rib_support_bottom_span(top_span) =
+    top_span - 2 * rib_support_run_per_side(top_span);
+
+function rib_support_span_at(top_span, step) =
+    rib_support_bottom_span(top_span)
+    + 2
+    * rib_support_run_per_side(top_span)
+    * pow(step / rib_support_steps, rib_support_curve_power);
+
+function rib_support_z_at(step) =
+    wall + (inner_h - rib_support_slice_h) * step / rib_support_steps;
+
+function rib_outer_fill_span_at(bottom_span, top_span, step) =
+    bottom_span
+    + (top_span - bottom_span)
+    * pow(step / rib_support_steps, 1 / rib_support_curve_power);
 
 // OpenSCAD 2021 has no native object/dictionary syntax, so this key/value list
 // is the parts object. Change true/false by part name to export or inspect.
 parts = [
     ["bottom", true],
     ["top_lid", true],
-    ["front", false],
-    ["back", false],
-    ["left", false],
-    ["right", false],
+    ["front", true],
+    ["back", true],
+    ["left", true],
+    ["right", true],
     ["ribs_x", true],
     ["ribs_y", true],
     ["bracket", true],
@@ -327,49 +360,110 @@ module placed_bracket() {
     }
 }
 
-module rib_x_plane(x_pos) {
-    difference() {
-        translate([x_pos - wall / 2, wall, wall])
-            cube([wall, base_y - 2 * wall, inner_h]);
+module rib_support_y_span(x_pos, y_min, y_max) {
+    top_span = y_max - y_min;
+    y_center = (y_min + y_max) / 2;
 
-        if (rib_cutout_enabled) {
-            for (y_pos = rib_y_positions) {
-                translate([
-                    x_pos - wall / 2 - rib_cutout_overlap / 2,
-                    y_pos - rib_cutout_span / 2,
-                    wall - rib_cutout_overlap / 2
-                ])
-                    cube([
-                        wall + rib_cutout_overlap,
-                        rib_cutout_span,
-                        inner_h + rib_cutout_overlap
-                    ]);
-            }
+    for (step = [0 : rib_support_steps - 1]) {
+        hull() {
+            translate([
+                x_pos - wall / 2,
+                y_center - rib_support_span_at(top_span, step) / 2,
+                rib_support_z_at(step)
+            ])
+                cube([
+                    wall,
+                    rib_support_span_at(top_span, step),
+                    rib_support_slice_h
+                ]);
+
+            translate([
+                x_pos - wall / 2,
+                y_center - rib_support_span_at(top_span, step + 1) / 2,
+                rib_support_z_at(step + 1)
+            ])
+                cube([
+                    wall,
+                    rib_support_span_at(top_span, step + 1),
+                    rib_support_slice_h
+                ]);
         }
     }
 }
 
-module rib_y_outer_trapezoid_segment(
+module rib_support_x_span(y_pos, x_min, x_max) {
+    top_span = x_max - x_min;
+    x_center = (x_min + x_max) / 2;
+
+    for (step = [0 : rib_support_steps - 1]) {
+        hull() {
+            translate([
+                x_center - rib_support_span_at(top_span, step) / 2,
+                y_pos - wall / 2,
+                rib_support_z_at(step)
+            ])
+                cube([
+                    rib_support_span_at(top_span, step),
+                    wall,
+                    rib_support_slice_h
+                ]);
+
+            translate([
+                x_center - rib_support_span_at(top_span, step + 1) / 2,
+                y_pos - wall / 2,
+                rib_support_z_at(step + 1)
+            ])
+                cube([
+                    rib_support_span_at(top_span, step + 1),
+                    wall,
+                    rib_support_slice_h
+                ]);
+        }
+    }
+}
+
+module rib_x_plane(x_pos) {
+    if (rib_cutout_enabled) {
+        rib_support_y_span(
+            x_pos,
+            wall,
+            rib_y_positions[0] - rib_cutout_span / 2
+        );
+
+        rib_support_y_span(
+            x_pos,
+            rib_y_positions[0] + rib_cutout_span / 2,
+            base_y - wall
+        );
+    } else {
+        rib_support_y_span(x_pos, wall, base_y - wall);
+    }
+}
+
+module rib_y_outer_curved_trapezoid_segment(
     y_pos,
     x_bottom_min,
     x_bottom_max,
     x_top_min,
     x_top_max
 ) {
-    hull() {
-        translate([x_bottom_min, y_pos - wall / 2, wall])
-            cube([
-                x_bottom_max - x_bottom_min,
-                wall,
-                rib_trapezoid_slice_h
-            ]);
+    bottom_span = x_bottom_max - x_bottom_min;
+    top_span = x_top_max - x_top_min;
+    left_side_locked = x_bottom_min == x_top_min;
 
-        translate([x_top_min, y_pos - wall / 2, wall + inner_h - rib_trapezoid_slice_h])
-            cube([
-                x_top_max - x_top_min,
-                wall,
-                rib_trapezoid_slice_h
-            ]);
+    for (step = [0 : rib_support_steps - 1]) {
+        span_a = rib_outer_fill_span_at(bottom_span, top_span, step);
+        span_b = rib_outer_fill_span_at(bottom_span, top_span, step + 1);
+        x_a = left_side_locked ? x_bottom_min : x_bottom_max - span_a;
+        x_b = left_side_locked ? x_bottom_min : x_bottom_max - span_b;
+
+        hull() {
+            translate([x_a, y_pos - wall / 2, rib_support_z_at(step)])
+                cube([span_a, wall, rib_support_slice_h]);
+
+            translate([x_b, y_pos - wall / 2, rib_support_z_at(step + 1)])
+                cube([span_b, wall, rib_support_slice_h]);
+        }
     }
 }
 
@@ -377,13 +471,12 @@ module rib_y_center_segment(y_pos) {
     x_min = rib_x_positions[0] + rib_cutout_span / 2;
     x_max = rib_x_positions[1] - rib_cutout_span / 2;
 
-    translate([x_min, y_pos - wall / 2, wall])
-        cube([x_max - x_min, wall, inner_h]);
+    rib_support_x_span(y_pos, x_min, x_max);
 }
 
 module rib_y_plane(y_pos) {
     if (rib_cutout_enabled) {
-        rib_y_outer_trapezoid_segment(
+        rib_y_outer_curved_trapezoid_segment(
             y_pos,
             wall,
             rib_x_positions[0] - rib_cutout_span / 2,
@@ -393,7 +486,7 @@ module rib_y_plane(y_pos) {
 
         rib_y_center_segment(y_pos);
 
-        rib_y_outer_trapezoid_segment(
+        rib_y_outer_curved_trapezoid_segment(
             y_pos,
             rib_x_positions[1] + rib_cutout_span / 2,
             base_x - wall,
