@@ -177,6 +177,62 @@ top_bracket_hole_d = lid_thread_d; // 10.4 мм
 материал сверху, между отверстиями и снизу распределен равномерно. При высоте
 `40 мм` вертикальный зазор получается `6.4 мм`.
 
+## Кубическая версия
+
+Файл `2026-07-05_iphone_15_pro_max_cube.scad` - новая итерация после печати
+параллелепипедной версии. Основание теперь является более низким и широким
+полым корпусом:
+
+```text
+внешний размер: 140 x 80 x 50 мм
+ось X:          ширина, перпендикулярная оси между отверстиями крепления кронштейна
+толщина стенок: 4 мм
+толщина крышки: 12 мм
+```
+
+Внутри основания стоят два ребра, идущие вдоль длинной стороны `X`, и одно
+поперечное ребро, идущее вдоль короткой стороны `Y`. В местах двух пересечений
+в каждом ребре сделаны нижние порты `20 x 20 мм`. Так внутренний объем остается
+единым, а вода или песок могут свободно распределяться по всему основанию.
+
+Кронштейн в этой версии является отдельной деталью. Его основание:
+
+```text
+ширина по X: 36 мм  // по внешним сторонам боковин
+длина по Y:  80 мм  // до краев платформы
+толщина по Z: 10 мм
+```
+
+Боковины кронштейна имеют размер `10 x 30 x 50 мм`. Боковые отверстия
+по-прежнему гладкие `10.4 мм`, но расстояние между центрами увеличено на `10 мм`:
+центры находятся на `11.6 мм` и `38.4 мм` от низа боковины.
+
+Кронштейн крепится к верхней крышке двумя болтами того же диаметра. Резьба в
+крышке глухая:
+
+```scad
+lid_mount_thread_depth = 8.5;
+mount_bolt_lid_engagement = 8;
+```
+
+Напечатанный крепежный болт для этой сборки имеет резьбовую часть `18 мм`:
+`10 мм` проходят через основание кронштейна и `8 мм` входят в крышку. Это
+оставляет около `3.5 мм` материала внизу 12-миллиметровой крышки.
+
+По бокам крышки, свободным от основания кронштейна, добавлены два сквозных
+резьбовых отверстия M20 для заливки воды или песка:
+
+```scad
+fill_bolt_d = 20;
+fill_bolt_pitch = 2.5;
+fill_thread_d = 20.4;
+fill_bolt_thread_d = 19.8;
+```
+
+Центры этих отверстий находятся в серединах свободных зон крышки:
+`X = 26 мм` и `X = 114 мм`, `Y = 40 мм`. Для них в файле есть отдельные
+болты-пробки с шестигранными головками.
+
 ## Экспорт
 
 Из корня проекта:
@@ -202,4 +258,29 @@ openscad -o stl/iphone_holder_top.stl \
 openscad -o stl/iphone_holder_bolt_left.stl \
   -D 'parts=[["bottom",false],["top",false],["front",false],["back",false],["left",false],["right",false],["rib",false],["top_brackets",false],["bolt_left_of_rib",true],["bolt_right_of_rib",false]]' \
   "models/iphone_holder/2026-07-03_iphone_15_pro_max_hollow_box.scad"
+```
+
+Для новой кубической версии имена деталей другие. Корпус с крышкой, внутренними
+ребрами и кронштейном, но без болтов:
+
+```bash
+openscad -o stl/iphone_holder_cube_body.stl \
+  -D 'parts=[["bottom",true],["top_lid",true],["front",true],["back",true],["left",true],["right",true],["ribs_x",true],["ribs_y",true],["bracket",true],["mount_bolt_front",false],["mount_bolt_back",false],["fill_bolt_left",false],["fill_bolt_right",false]]' \
+  "models/iphone_holder/2026-07-05_iphone_15_pro_max_cube.scad"
+```
+
+Один крепежный болт кронштейна M10-like:
+
+```bash
+openscad -o stl/iphone_holder_cube_mount_bolt.stl \
+  -D 'parts=[["bottom",false],["top_lid",false],["front",false],["back",false],["left",false],["right",false],["ribs_x",false],["ribs_y",false],["bracket",false],["mount_bolt_front",true],["mount_bolt_back",false],["fill_bolt_left",false],["fill_bolt_right",false]]' \
+  "models/iphone_holder/2026-07-05_iphone_15_pro_max_cube.scad"
+```
+
+Одна резьбовая пробка M20:
+
+```bash
+openscad -o stl/iphone_holder_cube_fill_bolt.stl \
+  -D 'parts=[["bottom",false],["top_lid",false],["front",false],["back",false],["left",false],["right",false],["ribs_x",false],["ribs_y",false],["bracket",false],["mount_bolt_front",false],["mount_bolt_back",false],["fill_bolt_left",true],["fill_bolt_right",false]]' \
+  "models/iphone_holder/2026-07-05_iphone_15_pro_max_cube.scad"
 ```

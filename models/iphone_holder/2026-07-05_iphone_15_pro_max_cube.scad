@@ -1,0 +1,430 @@
+// Cuboid iPhone 15 Pro Max holder base.
+//
+// This model is a new iteration after printing the 2026-07-03 hollow box:
+// - external base is shorter and wider for lower center of gravity;
+// - top lid is 12 mm thick;
+// - bracket is an independent detachable part;
+// - bracket mounting holes in the lid are blind, 8.5 mm deep;
+// - two M20 threaded through holes in the lid can be used as fill ports.
+
+$fn = 32;
+preview_fast = $preview;
+
+use <../../lib/core/threads/threads.scad>
+
+// The Y size stays 80 mm. Width is perpendicular to the axis between the
+// bracket mounting holes, so X grows by 30 mm on each side. Z is 30 mm lower.
+base_x = 140;
+base_y = 80;
+base_z = 50;
+
+wall = 4;
+lid_thickness = 12;
+inner_h = base_z - wall - lid_thickness;
+
+// Proven printed M10-like thread fit copied from 2026-07-02_sample_screw_and_hole.scad:
+// internal thread diameter = 10.4 mm, external bolt thread diameter = 9.8 mm.
+bolt_d = 10;
+bolt_pitch = 1.5;
+thread_fit_clearance = 0.4;
+bolt_fit_clearance = 0.2;
+thread_leadin = 2;
+
+lid_thread_d = bolt_d + thread_fit_clearance;
+bolt_thread_d = bolt_d - bolt_fit_clearance;
+
+// The mounting screw engages only 8 mm into the 12 mm lid. The modeled threaded
+// shaft also includes the 10 mm bracket base thickness so the assembly can clamp.
+mount_bolt_lid_engagement = 8;
+lid_mount_thread_depth = 8.5;
+lid_mount_thread_cut_overlap = 0.2;
+
+bolt_head_d = 16;
+bolt_head_h = 5;
+
+// M20 fill ports are through-threaded in the lid.
+fill_bolt_d = 20;
+fill_bolt_pitch = 2.5;
+fill_thread_d = fill_bolt_d + thread_fit_clearance;
+fill_bolt_thread_d = fill_bolt_d - bolt_fit_clearance;
+fill_bolt_thread_length = lid_thickness;
+fill_bolt_head_d = 30;
+fill_bolt_head_h = 8;
+
+bracket_side_thickness = 10;
+bracket_gap = 16;
+bracket_side_depth = 30;
+bracket_side_height = 50;
+bracket_base_thickness = bracket_side_thickness;
+bracket_base_width = 2 * bracket_side_thickness + bracket_gap;
+bracket_base_depth = base_y;
+
+mount_bolt_thread_length = bracket_base_thickness + mount_bolt_lid_engagement;
+mount_bolt_clearance_d = lid_thread_d;
+
+bracket_center_x = base_x / 2;
+bracket_base_x_min = bracket_center_x - bracket_base_width / 2;
+bracket_base_x_max = bracket_center_x + bracket_base_width / 2;
+bracket_side_y_min = base_y / 2 - bracket_side_depth / 2;
+bracket_side_y_max = bracket_side_y_min + bracket_side_depth;
+bracket_side_left_x = bracket_center_x - bracket_gap / 2 - bracket_side_thickness;
+bracket_side_right_x = bracket_center_x + bracket_gap / 2;
+
+// Mounting bolts sit in the middle of the free front/back margins of the
+// bracket base, centered on X.
+mount_bolt_positions = [
+    [bracket_center_x, bracket_side_y_min / 2],
+    [bracket_center_x, (bracket_side_y_max + base_y) / 2]
+];
+
+// M20 fill ports sit in the middle of the lid areas left/right of the bracket
+// base. They are through holes in the 12 mm lid.
+fill_bolt_positions = [
+    [bracket_base_x_min / 2, base_y / 2],
+    [(bracket_base_x_max + base_x) / 2, base_y / 2]
+];
+
+// Side holes are 10 mm farther apart than in the previous 40 mm bracket. The
+// old 6.4 mm edge clearance is preserved, making the holes closer to top/bottom.
+old_bracket_side_height = 40;
+old_bracket_hole_edge_gap =
+    (old_bracket_side_height - 2 * mount_bolt_clearance_d) / 3;
+bracket_side_hole_z_offsets = [
+    old_bracket_hole_edge_gap + mount_bolt_clearance_d / 2,
+    bracket_side_height - old_bracket_hole_edge_gap - mount_bolt_clearance_d / 2
+];
+
+// Two ribs run along the long X side. One cross rib runs along the short Y side.
+// At every intersection, 20 x 20 mm bottom ports are cut into both ribs so
+// water or sand can move through a single connected volume.
+rib_x_positions = [
+    base_x / 2
+];
+rib_y_positions = [
+    base_y / 3,
+    2 * base_y / 3
+];
+rib_port_enabled = true;
+rib_port_size = 20;
+rib_port_cut_overlap = 0.2;
+
+// OpenSCAD 2021 has no native object/dictionary syntax, so this key/value list
+// is the parts object. Change true/false by part name to export or inspect.
+parts = [
+    ["bottom", true],
+    ["top_lid", true],
+    ["front", true],
+    ["back", true],
+    ["left", true],
+    ["right", true],
+    ["ribs_x", true],
+    ["ribs_y", true],
+    ["bracket", true],
+    ["mount_bolt_front", false],
+    ["mount_bolt_back", false],
+    ["fill_bolt_left", false],
+    ["fill_bolt_right", false]
+];
+
+function part_enabled(name) =
+    len([for (part = parts) if (part[0] == name && part[1]) part]) > 0;
+
+function base_context_enabled() =
+    part_enabled("bottom")
+    || part_enabled("top_lid")
+    || part_enabled("front")
+    || part_enabled("back")
+    || part_enabled("left")
+    || part_enabled("right")
+    || part_enabled("ribs_x")
+    || part_enabled("ribs_y");
+
+module enabled_part(name, color_value) {
+    if (part_enabled(name)) {
+        color(color_value)
+            children();
+    }
+}
+
+module lid_mount_threaded_hole(position) {
+    translate([
+        position[0],
+        position[1],
+        base_z - lid_mount_thread_depth
+    ])
+        metric_thread(
+            diameter = lid_thread_d,
+            pitch = bolt_pitch,
+            length = lid_mount_thread_depth + lid_mount_thread_cut_overlap,
+            internal = true,
+            leadin = thread_leadin,
+            test = preview_fast
+        );
+}
+
+module fill_threaded_hole(position) {
+    translate([
+        position[0],
+        position[1],
+        base_z - lid_thickness - lid_mount_thread_cut_overlap / 2
+    ])
+        metric_thread(
+            diameter = fill_thread_d,
+            pitch = fill_bolt_pitch,
+            length = lid_thickness + lid_mount_thread_cut_overlap,
+            internal = true,
+            leadin = thread_leadin,
+            test = preview_fast
+        );
+}
+
+module hex_head_bolt(thread_d, pitch, thread_length, head_d, head_h) {
+    union() {
+        metric_thread(
+            diameter = thread_d,
+            pitch = pitch,
+            length = thread_length,
+            internal = false,
+            leadin = thread_leadin,
+            test = preview_fast
+        );
+
+        translate([0, 0, thread_length])
+            rotate([0, 0, 30])
+                cylinder(d = head_d, h = head_h, $fn = 6);
+    }
+}
+
+module mount_bolt() {
+    hex_head_bolt(
+        bolt_thread_d,
+        bolt_pitch,
+        mount_bolt_thread_length,
+        bolt_head_d,
+        bolt_head_h
+    );
+}
+
+module fill_bolt() {
+    hex_head_bolt(
+        fill_bolt_thread_d,
+        fill_bolt_pitch,
+        fill_bolt_thread_length,
+        fill_bolt_head_d,
+        fill_bolt_head_h
+    );
+}
+
+module placed_mount_bolt(position) {
+    if (base_context_enabled() && part_enabled("bracket")) {
+        translate([
+            position[0],
+            position[1],
+            base_z + bracket_base_thickness - mount_bolt_thread_length
+        ])
+            mount_bolt();
+    } else if (base_context_enabled()) {
+        translate([
+            position[0],
+            position[1],
+            base_z - mount_bolt_lid_engagement
+        ])
+            hex_head_bolt(
+                bolt_thread_d,
+                bolt_pitch,
+                mount_bolt_lid_engagement,
+                bolt_head_d,
+                bolt_head_h
+            );
+    } else {
+        mount_bolt();
+    }
+}
+
+module placed_fill_bolt(position) {
+    if (base_context_enabled()) {
+        translate([
+            position[0],
+            position[1],
+            base_z - fill_bolt_thread_length
+        ])
+            fill_bolt();
+    } else {
+        fill_bolt();
+    }
+}
+
+module bracket_base(z_origin) {
+    translate([bracket_base_x_min, 0, z_origin])
+        difference() {
+            cube([
+                bracket_base_width,
+                bracket_base_depth,
+                bracket_base_thickness
+            ]);
+
+            for (position = mount_bolt_positions) {
+                translate([
+                    position[0] - bracket_base_x_min,
+                    position[1],
+                    -lid_mount_thread_cut_overlap / 2
+                ])
+                    cylinder(
+                        d = mount_bolt_clearance_d,
+                        h = bracket_base_thickness + lid_mount_thread_cut_overlap
+                    );
+            }
+        }
+}
+
+module bracket_side(side_x, z_origin) {
+    translate([
+        side_x,
+        bracket_side_y_min,
+        z_origin + bracket_base_thickness
+    ])
+        difference() {
+            cube([
+                bracket_side_thickness,
+                bracket_side_depth,
+                bracket_side_height
+            ]);
+
+            for (hole_z = bracket_side_hole_z_offsets) {
+                translate([
+                    -lid_mount_thread_cut_overlap / 2,
+                    bracket_side_depth / 2,
+                    hole_z
+                ])
+                    rotate([0, 90, 0])
+                        cylinder(
+                            d = mount_bolt_clearance_d,
+                            h = bracket_side_thickness + lid_mount_thread_cut_overlap
+                        );
+            }
+        }
+}
+
+module bracket_at_z(z_origin) {
+    bracket_base(z_origin);
+    bracket_side(bracket_side_left_x, z_origin);
+    bracket_side(bracket_side_right_x, z_origin);
+}
+
+module placed_bracket() {
+    if (base_context_enabled()) {
+        bracket_at_z(base_z);
+    } else {
+        bracket_at_z(0);
+    }
+}
+
+module rib_x_plane(x_pos) {
+    difference() {
+        translate([x_pos - wall / 2, wall, wall])
+            cube([wall, base_y - 2 * wall, inner_h]);
+
+        if (rib_port_enabled) {
+            for (y_pos = rib_y_positions) {
+                translate([
+                    x_pos - wall / 2 - rib_port_cut_overlap / 2,
+                    y_pos - rib_port_size / 2,
+                    wall - rib_port_cut_overlap / 2
+                ])
+                    cube([
+                        wall + rib_port_cut_overlap,
+                        rib_port_size,
+                        rib_port_size + rib_port_cut_overlap
+                    ]);
+            }
+        }
+    }
+}
+
+module rib_y_plane(y_pos) {
+    difference() {
+        translate([wall, y_pos - wall / 2, wall])
+            cube([base_x - 2 * wall, wall, inner_h]);
+
+        if (rib_port_enabled) {
+            for (x_pos = rib_x_positions) {
+                translate([
+                    x_pos - rib_port_size / 2,
+                    y_pos - wall / 2 - rib_port_cut_overlap / 2,
+                    wall - rib_port_cut_overlap / 2
+                ])
+                    cube([
+                        rib_port_size,
+                        wall + rib_port_cut_overlap,
+                        rib_port_size + rib_port_cut_overlap
+                    ]);
+            }
+        }
+    }
+}
+
+module cube_base() {
+    enabled_part("bottom", [0.35, 0.45, 0.62])
+        cube([base_x, base_y, wall]);
+
+    enabled_part("top_lid", [0.35, 0.45, 0.62])
+        difference() {
+            translate([0, 0, base_z - lid_thickness])
+                cube([base_x, base_y, lid_thickness]);
+
+            for (position = mount_bolt_positions) {
+                lid_mount_threaded_hole(position);
+            }
+
+            for (position = fill_bolt_positions) {
+                fill_threaded_hole(position);
+            }
+        }
+
+    enabled_part("front", [0.50, 0.35, 0.52])
+        translate([0, 0, wall])
+            cube([base_x, wall, inner_h]);
+
+    enabled_part("back", [0.50, 0.35, 0.52])
+        translate([0, base_y - wall, wall])
+            cube([base_x, wall, inner_h]);
+
+    enabled_part("left", [0.35, 0.55, 0.45])
+        translate([0, wall, wall])
+            cube([wall, base_y - 2 * wall, inner_h]);
+
+    enabled_part("right", [0.35, 0.55, 0.45])
+        translate([base_x - wall, wall, wall])
+            cube([wall, base_y - 2 * wall, inner_h]);
+
+    enabled_part("ribs_x", [0.75, 0.55, 0.30])
+        for (x_pos = rib_x_positions) {
+            rib_x_plane(x_pos);
+        }
+
+    enabled_part("ribs_y", [0.80, 0.58, 0.34])
+        for (y_pos = rib_y_positions) {
+            rib_y_plane(y_pos);
+        }
+}
+
+module iphone_15_pro_max_cube_holder() {
+    cube_base();
+
+    enabled_part("bracket", [0.35, 0.45, 0.62])
+        placed_bracket();
+
+    enabled_part("mount_bolt_front", [0.58, 0.60, 0.62])
+        placed_mount_bolt(mount_bolt_positions[0]);
+
+    enabled_part("mount_bolt_back", [0.58, 0.60, 0.62])
+        placed_mount_bolt(mount_bolt_positions[1]);
+
+    enabled_part("fill_bolt_left", [0.58, 0.60, 0.62])
+        placed_fill_bolt(fill_bolt_positions[0]);
+
+    enabled_part("fill_bolt_right", [0.58, 0.60, 0.62])
+        placed_fill_bolt(fill_bolt_positions[1]);
+}
+
+iphone_15_pro_max_cube_holder();
