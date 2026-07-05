@@ -94,36 +94,36 @@ bracket_side_hole_z_offsets = [
     bracket_side_height - old_bracket_hole_edge_gap - mount_bolt_clearance_d / 2
 ];
 
-// Two ribs run along the long X side. One cross rib runs along the short Y side.
-// At every intersection, 20 x 20 mm bottom ports are cut into both ribs so
-// water or sand can move through a single connected volume.
+// Two ribs are perpendicular to the long X side. One rib is perpendicular to
+// the short Y side. At every intersection, both ribs get a full-height cutout
+// with a 30 mm horizontal span, centered 15 mm to each side of the contact.
 rib_x_positions = [
-    base_x / 2
+    base_x / 3,
+    2 * base_x / 3
 ];
 rib_y_positions = [
-    base_y / 3,
-    2 * base_y / 3
+    base_y / 2
 ];
-rib_port_enabled = true;
-rib_port_size = 20;
-rib_port_cut_overlap = 0.2;
+rib_cutout_enabled = true;
+rib_cutout_span = 30;
+rib_cutout_overlap = 0.2;
 
 // OpenSCAD 2021 has no native object/dictionary syntax, so this key/value list
 // is the parts object. Change true/false by part name to export or inspect.
 parts = [
     ["bottom", true],
     ["top_lid", true],
-    ["front", true],
-    ["back", true],
-    ["left", true],
-    ["right", true],
+    ["front", false],
+    ["back", false],
+    ["left", false],
+    ["right", false],
     ["ribs_x", true],
     ["ribs_y", true],
     ["bracket", true],
-    ["mount_bolt_front", false],
-    ["mount_bolt_back", false],
-    ["fill_bolt_left", false],
-    ["fill_bolt_right", false]
+    ["mount_bolt_front", true],
+    ["mount_bolt_back", true],
+    ["fill_bolt_left", true],
+    ["fill_bolt_right", true]
 ];
 
 function part_enabled(name) =
@@ -324,17 +324,17 @@ module rib_x_plane(x_pos) {
         translate([x_pos - wall / 2, wall, wall])
             cube([wall, base_y - 2 * wall, inner_h]);
 
-        if (rib_port_enabled) {
+        if (rib_cutout_enabled) {
             for (y_pos = rib_y_positions) {
                 translate([
-                    x_pos - wall / 2 - rib_port_cut_overlap / 2,
-                    y_pos - rib_port_size / 2,
-                    wall - rib_port_cut_overlap / 2
+                    x_pos - wall / 2 - rib_cutout_overlap / 2,
+                    y_pos - rib_cutout_span / 2,
+                    wall - rib_cutout_overlap / 2
                 ])
                     cube([
-                        wall + rib_port_cut_overlap,
-                        rib_port_size,
-                        rib_port_size + rib_port_cut_overlap
+                        wall + rib_cutout_overlap,
+                        rib_cutout_span,
+                        inner_h + rib_cutout_overlap
                     ]);
             }
         }
@@ -346,17 +346,17 @@ module rib_y_plane(y_pos) {
         translate([wall, y_pos - wall / 2, wall])
             cube([base_x - 2 * wall, wall, inner_h]);
 
-        if (rib_port_enabled) {
+        if (rib_cutout_enabled) {
             for (x_pos = rib_x_positions) {
                 translate([
-                    x_pos - rib_port_size / 2,
-                    y_pos - wall / 2 - rib_port_cut_overlap / 2,
-                    wall - rib_port_cut_overlap / 2
+                    x_pos - rib_cutout_span / 2,
+                    y_pos - wall / 2 - rib_cutout_overlap / 2,
+                    wall - rib_cutout_overlap / 2
                 ])
                     cube([
-                        rib_port_size,
-                        wall + rib_port_cut_overlap,
-                        rib_port_size + rib_port_cut_overlap
+                        rib_cutout_span,
+                        wall + rib_cutout_overlap,
+                        inner_h + rib_cutout_overlap
                     ]);
             }
         }
