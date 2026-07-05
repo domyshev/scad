@@ -83,6 +83,10 @@ fill_bolt_positions = [
     [bracket_base_x_min / 2, base_y / 2],
     [(bracket_base_x_max + base_x) / 2, base_y / 2]
 ];
+fill_bolt_outer_edges_x = [
+    fill_bolt_positions[0][0] - fill_thread_d / 2,
+    fill_bolt_positions[1][0] + fill_thread_d / 2
+];
 
 // Side holes are 10 mm farther apart than in the previous 40 mm bracket. The
 // old 6.4 mm edge clearance is preserved, making the holes closer to top/bottom.
@@ -97,6 +101,9 @@ bracket_side_hole_z_offsets = [
 // Two ribs are perpendicular to the long X side. One rib is perpendicular to
 // the short Y side. At every intersection, both ribs get a full-height cutout
 // with a 30 mm horizontal span, centered 15 mm to each side of the contact.
+// Only the two outer pieces of the rib parallel to the long X side are
+// trapezoids in X/Z side view, so the fill holes do not pour onto vertical rib
+// walls.
 rib_x_positions = [
     base_x / 3,
     2 * base_x / 3
@@ -107,6 +114,7 @@ rib_y_positions = [
 rib_cutout_enabled = true;
 rib_cutout_span = 30;
 rib_cutout_overlap = 0.2;
+rib_trapezoid_slice_h = 0.1;
 
 // OpenSCAD 2021 has no native object/dictionary syntax, so this key/value list
 // is the parts object. Change true/false by part name to export or inspect.
@@ -341,25 +349,60 @@ module rib_x_plane(x_pos) {
     }
 }
 
+module rib_y_outer_trapezoid_segment(
+    y_pos,
+    x_bottom_min,
+    x_bottom_max,
+    x_top_min,
+    x_top_max
+) {
+    hull() {
+        translate([x_bottom_min, y_pos - wall / 2, wall])
+            cube([
+                x_bottom_max - x_bottom_min,
+                wall,
+                rib_trapezoid_slice_h
+            ]);
+
+        translate([x_top_min, y_pos - wall / 2, wall + inner_h - rib_trapezoid_slice_h])
+            cube([
+                x_top_max - x_top_min,
+                wall,
+                rib_trapezoid_slice_h
+            ]);
+    }
+}
+
+module rib_y_center_segment(y_pos) {
+    x_min = rib_x_positions[0] + rib_cutout_span / 2;
+    x_max = rib_x_positions[1] - rib_cutout_span / 2;
+
+    translate([x_min, y_pos - wall / 2, wall])
+        cube([x_max - x_min, wall, inner_h]);
+}
+
 module rib_y_plane(y_pos) {
-    difference() {
+    if (rib_cutout_enabled) {
+        rib_y_outer_trapezoid_segment(
+            y_pos,
+            wall,
+            rib_x_positions[0] - rib_cutout_span / 2,
+            wall,
+            fill_bolt_outer_edges_x[0]
+        );
+
+        rib_y_center_segment(y_pos);
+
+        rib_y_outer_trapezoid_segment(
+            y_pos,
+            rib_x_positions[1] + rib_cutout_span / 2,
+            base_x - wall,
+            fill_bolt_outer_edges_x[1],
+            base_x - wall
+        );
+    } else {
         translate([wall, y_pos - wall / 2, wall])
             cube([base_x - 2 * wall, wall, inner_h]);
-
-        if (rib_cutout_enabled) {
-            for (x_pos = rib_x_positions) {
-                translate([
-                    x_pos - rib_cutout_span / 2,
-                    y_pos - wall / 2 - rib_cutout_overlap / 2,
-                    wall - rib_cutout_overlap / 2
-                ])
-                    cube([
-                        rib_cutout_span,
-                        wall + rib_cutout_overlap,
-                        inner_h + rib_cutout_overlap
-                    ]);
-            }
-        }
     }
 }
 
