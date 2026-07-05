@@ -35,15 +35,10 @@ lid_thread_cut_overlap = 0.2;
 lid_thread_d = bolt_d + thread_fit_clearance;
 bolt_thread_d = bolt_d - bolt_fit_clearance;
 
-// Two threaded lid holes: the hole edge is 5 mm from the inner face of the
-// long front side, and each hole center is 10 mm left/right from the rib axis.
+// Two threaded lid holes: the Y placement stays 5 mm from the inner face of
+// the long front side to the hole edge. X is computed below from the brackets.
 lid_hole_edge_from_long_side = 5;
-lid_hole_offset_from_rib = 10;
 lid_hole_y = wall + lid_hole_edge_from_long_side + lid_thread_d / 2;
-lid_hole_positions = [
-    [box_l / 2 - lid_hole_offset_from_rib, lid_hole_y],
-    [box_l / 2 + lid_hole_offset_from_rib, lid_hole_y]
-];
 
 bolt_thread_length = lid_thread_depth;
 bolt_head_d = 16;
@@ -61,6 +56,18 @@ top_bracket_center_offset = top_brackets_gap / 2 + top_bracket_thickness / 2;
 top_bracket_centers_x = [
     box_l / 2 - top_bracket_center_offset,
     box_l / 2 + top_bracket_center_offset
+];
+top_bracket_outer_edges_x = [
+    top_bracket_centers_x[0] - top_bracket_thickness / 2,
+    top_bracket_centers_x[1] + top_bracket_thickness / 2
+];
+lid_hole_x_positions = [
+    top_bracket_outer_edges_x[0] / 2,
+    (top_bracket_outer_edges_x[1] + box_l) / 2
+];
+lid_hole_positions = [
+    [lid_hole_x_positions[0], lid_hole_y],
+    [lid_hole_x_positions[1], lid_hole_y]
 ];
 top_bracket_cut_overlap = 0.2;
 top_bracket_hole_d = lid_thread_d; // smooth 10.4 mm clearance for the 9.8 mm bolt
@@ -80,13 +87,13 @@ rib_slot_cut_overlap = 0.2;
 // OpenSCAD 2021 has no native object/dictionary syntax, so this key/value list
 // is the parts object. Change true/false by part name to export or inspect sides.
 parts = [
-    ["bottom", false],
+    ["bottom", true],
     ["top",    true],
-    ["front",  false],
-    ["back",   false],
-    ["left",   false],
-    ["right",  false],
-    ["rib",    false],
+    ["front",  true],
+    ["back",   true],
+    ["left",   true],
+    ["right",  true],
+    ["rib",    true],
     ["top_brackets", true],
     ["bolt_left_of_rib",  true],
     ["bolt_right_of_rib", true]
@@ -94,6 +101,16 @@ parts = [
 
 function part_enabled(name) =
     len([for (part = parts) if (part[0] == name && part[1]) part]) > 0;
+
+function assembly_context_enabled() =
+    part_enabled("bottom")
+    || part_enabled("top")
+    || part_enabled("front")
+    || part_enabled("back")
+    || part_enabled("left")
+    || part_enabled("right")
+    || part_enabled("rib")
+    || part_enabled("top_brackets");
 
 module enabled_part(name, color_value) {
     if (part_enabled(name)) {
@@ -128,6 +145,15 @@ module hex_head_bolt() {
         translate([0, 0, bolt_thread_length])
             rotate([0, 0, 30])
                 cylinder(d = bolt_head_d, h = bolt_head_h, $fn = 6);
+    }
+}
+
+module placed_bolt(position) {
+    if (assembly_context_enabled()) {
+        translate([position[0], position[1], bolt_insert_z])
+            hex_head_bolt();
+    } else {
+        hex_head_bolt();
     }
 }
 
@@ -229,14 +255,12 @@ module iphone_15_pro_max_hollow_box() {
         }
 
     // Separate matching bolts for the two lid holes. In assembly view the
-    // threaded shaft is sunk into the lid, so only the hex head protrudes.
+    // threaded shaft is sunk into the lid; in bolt-only export it stays at Z=0.
     enabled_part("bolt_left_of_rib", [0.58, 0.60, 0.62])
-        translate([lid_hole_positions[0][0], lid_hole_positions[0][1], bolt_insert_z])
-            hex_head_bolt();
+        placed_bolt(lid_hole_positions[0]);
 
     enabled_part("bolt_right_of_rib", [0.58, 0.60, 0.62])
-        translate([lid_hole_positions[1][0], lid_hole_positions[1][1], bolt_insert_z])
-            hex_head_bolt();
+        placed_bolt(lid_hole_positions[1]);
 }
 
 iphone_15_pro_max_hollow_box();
