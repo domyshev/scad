@@ -137,6 +137,40 @@ render_scene() {
     jq -e '.geometry.dimensions == 3' "$summary_json" >/dev/null
 }
 
+wall_overlap_stl="$tmp_dir/ballast_min_wall_overlap.stl"
+wall_overlap_json="$tmp_dir/ballast_min_wall_overlap.json"
+wall_overlap_log="$tmp_dir/ballast_min_wall_overlap.log"
+if openscad \
+    --backend CGAL \
+    --export-format asciistl \
+    --hardwarnings \
+    --summary all \
+    --summary-file "$wall_overlap_json" \
+    -o "$wall_overlap_stl" \
+    -D 'scene="ballast_min_wall_overlap"' \
+    -D 'show_hardware=false' \
+    "$source_model" >"$wall_overlap_log" 2>&1; then
+    wall_overlap_exit=0
+else
+    wall_overlap_exit=$?
+fi
+
+if [[ -s "$wall_overlap_stl" ]]; then
+    wall_overlap_volume="$(ascii_stl_volume "$wall_overlap_stl")"
+    echo \
+        "FAIL: lid groove enters the 2.4 mm side-wall keepout by ${wall_overlap_volume} mm3" \
+        >&2
+    exit 1
+fi
+
+if [[ "$wall_overlap_exit" != "1" ]]; then
+    echo "FAIL: unexpected ballast minimum-wall probe result" >&2
+    cat "$wall_overlap_log" >&2
+    exit 1
+fi
+
+grep -q 'Current top level object is empty' "$wall_overlap_log"
+
 render_scene "frame_pair"
 render_scene "joint_spacer"
 render_scene "frame_envelope"

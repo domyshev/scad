@@ -52,6 +52,7 @@ ballast_rail_clearance = 0.28;
 ballast_lid_plate_h = 2.4;
 ballast_pin_hole_d = 1.9;
 ballast_collision_probe = 0.05;
+ballast_wall_contact_probe = 0.01;
 ballast_epsilon = 0.02;
 
 ballast_profile_side_run =
@@ -75,9 +76,13 @@ function ballast_outer_half_width(z_position) =
 function ballast_inner_half_width(z_position) =
     ballast_outer_half_width(z_position) - ballast_side_wall_x;
 
+function ballast_lid_half_width_at(z_position) =
+    ballast_inner_half_width(z_position) - ballast_rail_clearance;
+
 ballast_lid_half_width =
-    ballast_inner_half_width(ballast_lid_bottom_z) -
-        ballast_rail_clearance;
+    ballast_lid_half_width_at(ballast_lid_bottom_z);
+ballast_lid_top_half_width =
+    ballast_lid_half_width_at(ballast_lid_top_z);
 ballast_lid_width = 2 * ballast_lid_half_width;
 ballast_lid_min_y =
     -ballast_cavity_depth / 2 + ballast_rail_clearance;
@@ -253,11 +258,15 @@ module ballast_open_cavity() {
             ballast_lid_bottom_z
         ],
         [
-            ballast_inner_half_width(ballast_lid_bottom_z),
+            ballast_inner_half_width(
+                ballast_lid_top_z + ballast_epsilon
+            ),
             ballast_lid_top_z + ballast_epsilon
         ],
         [
-            -ballast_inner_half_width(ballast_lid_bottom_z),
+            -ballast_inner_half_width(
+                ballast_lid_top_z + ballast_epsilon
+            ),
             ballast_lid_top_z + ballast_epsilon
         ],
         [
@@ -418,19 +427,23 @@ module ballast_lid_entry_slot() {
     slot_min_y = ballast_cavity_depth / 2 - ballast_epsilon;
     slot_max_y = ballast_depth / 2 + ballast_epsilon;
     slot_depth = slot_max_y - slot_min_y;
+    slot_bottom_z = ballast_lid_bottom_z - ballast_rail_clearance;
+    slot_top_z = ballast_lid_top_z + ballast_epsilon;
+    slot_bottom_half_width =
+        ballast_inner_half_width(ballast_lid_bottom_z);
+    slot_top_half_width =
+        ballast_inner_half_width(slot_top_z);
+    slot_profile = [
+        [-slot_bottom_half_width, slot_bottom_z],
+        [slot_bottom_half_width, slot_bottom_z],
+        [slot_bottom_half_width, ballast_lid_bottom_z],
+        [slot_top_half_width, slot_top_z],
+        [-slot_top_half_width, slot_top_z],
+        [-slot_bottom_half_width, ballast_lid_bottom_z]
+    ];
 
-    translate([
-        0,
-        (slot_min_y + slot_max_y) / 2,
-        (ballast_lid_bottom_z - ballast_rail_clearance +
-            ballast_lid_top_z + ballast_epsilon) / 2
-    ])
-        cube([
-            ballast_lid_width + 2 * ballast_rail_clearance,
-            slot_depth,
-            ballast_lid_plate_h +
-                ballast_rail_clearance + ballast_epsilon
-        ], center = true);
+    translate([0, (slot_min_y + slot_max_y) / 2, 0])
+        extrude_xz(slot_profile, slot_depth);
 
     translate([
         0,
@@ -446,6 +459,53 @@ module ballast_lid_entry_slot() {
             ballast_rail_depth +
                 ballast_rail_clearance + ballast_epsilon
         ], center = true);
+}
+
+module ballast_min_wall_keepout() {
+    keepout_profile = [
+        [
+            ballast_inner_half_width(ballast_lid_bottom_z) +
+                ballast_wall_contact_probe,
+            ballast_lid_bottom_z
+        ],
+        [
+            ballast_outer_half_width(ballast_lid_bottom_z) +
+                ballast_wall,
+            ballast_lid_bottom_z
+        ],
+        [
+            ballast_outer_half_width(ballast_lid_top_z) +
+                ballast_wall,
+            ballast_lid_top_z
+        ],
+        [
+            ballast_inner_half_width(ballast_lid_top_z) +
+                ballast_wall_contact_probe,
+            ballast_lid_top_z
+        ]
+    ];
+
+    extrude_xz(
+        keepout_profile,
+        ballast_depth + 2 * ballast_epsilon
+    );
+
+    mirror([1, 0, 0])
+        extrude_xz(
+            keepout_profile,
+            ballast_depth + 2 * ballast_epsilon
+        );
+}
+
+module ballast_min_wall_overlap() {
+    intersection() {
+        ballast_min_wall_keepout();
+
+        union() {
+            ballast_open_cavity();
+            ballast_lid_entry_slot();
+        }
+    }
 }
 
 module ballast_pin_hole() {
@@ -485,18 +545,17 @@ module ballast_cassette_body(
 }
 
 module ballast_cassette_lid() {
+    lid_profile = [
+        [-ballast_lid_half_width, ballast_lid_bottom_z],
+        [ballast_lid_half_width, ballast_lid_bottom_z],
+        [ballast_lid_top_half_width, ballast_lid_top_z],
+        [-ballast_lid_top_half_width, ballast_lid_top_z]
+    ];
+
     difference() {
         union() {
-            translate([
-                0,
-                ballast_lid_center_y,
-                ballast_lid_bottom_z + ballast_lid_plate_h / 2
-            ])
-                cube([
-                    ballast_lid_width,
-                    ballast_lid_length,
-                    ballast_lid_plate_h
-                ], center = true);
+            translate([0, ballast_lid_center_y, 0])
+                extrude_xz(lid_profile, ballast_lid_length);
 
             ballast_labyrinth_lip();
         }
@@ -555,6 +614,8 @@ if (scene == "frame_pair") {
     ballast_void();
 } else if (scene == "frame_ballast_overlap") {
     frame_ballast_overlap();
+} else if (scene == "ballast_min_wall_overlap") {
+    ballast_min_wall_overlap();
 } else {
     assert(false, str("Unknown scene: ", scene));
 }
