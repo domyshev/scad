@@ -78,6 +78,57 @@ print(len({find(index) for index in range(len(triangles))}))
 PY
 }
 
+binary_stl_meshes_match() {
+    python3 - "$1" "$2" <<'PY'
+import collections
+import struct
+import sys
+
+
+def canonical_facet(vertices):
+    return min(
+        vertices[index:] + vertices[:index]
+        for index in range(len(vertices))
+    )
+
+
+def binary_stl_facets(path):
+    with open(path, "rb") as stl_file:
+        data = stl_file.read()
+
+    if len(data) < 84:
+        raise ValueError(f"binary STL is shorter than its header: {path}")
+
+    facet_count, = struct.unpack_from("<I", data, 80)
+    expected_size = 84 + 50 * facet_count
+    if len(data) != expected_size:
+        raise ValueError(
+            f"binary STL size mismatch for {path}: "
+            f"expected {expected_size}, found {len(data)}"
+        )
+
+    facets = []
+    for offset in range(84, len(data), 50):
+        record = struct.unpack_from("<12fH", data, offset)
+        vertices = tuple(
+            tuple(record[start:start + 3])
+            for start in (3, 6, 9)
+        )
+        facets.append(canonical_facet(vertices))
+
+    return collections.Counter(facets)
+
+
+try:
+    meshes_match = binary_stl_facets(sys.argv[1]) == binary_stl_facets(sys.argv[2])
+except (OSError, ValueError, struct.error) as error:
+    print(f"FAIL: cannot compare binary STL meshes: {error}", file=sys.stderr)
+    raise SystemExit(2)
+
+raise SystemExit(0 if meshes_match else 1)
+PY
+}
+
 render_scene() {
     local scene_name="$1"
     local show_hardware="${2:-false}"
@@ -247,7 +298,7 @@ render_scene "exploded_joint" true
 render_scene "presentation" true
 
 openscad \
-    --backend Manifold \
+    --backend CGAL \
     --export-format binstl \
     --hardwarnings \
     -o "$tmp_dir/artifact_link.stl" \
@@ -309,8 +360,20 @@ openscad \
     -D 'scene="assembled_joint"' \
     "$source_model" >/dev/null 2>&1
 
+functional_link_artifact="$artifact_dir/2026-07-11_modular_link.stl"
+if [[ ! -f "$functional_link_artifact" ]]; then
+    echo "FAIL: missing generated artifact: $functional_link_artifact" >&2
+    exit 1
+fi
+
+if ! binary_stl_meshes_match \
+    "$tmp_dir/artifact_link.stl" \
+    "$functional_link_artifact"; then
+    echo "FAIL: stale generated artifact: $functional_link_artifact" >&2
+    exit 1
+fi
+
 declare -a artifact_comparisons=(
-    "$tmp_dir/artifact_link.stl|$artifact_dir/2026-07-11_modular_link.stl"
     "$tmp_dir/artifact_concept.stl|$artifact_dir/2026-07-11_modular_link_joint_concept.stl"
     "$tmp_dir/artifact_concept.png|$artifact_dir/2026-07-11_modular_link_joint_concept.png"
     "$tmp_dir/artifact_detail.png|$artifact_dir/2026-07-11_modular_link_joint_detail.png"
