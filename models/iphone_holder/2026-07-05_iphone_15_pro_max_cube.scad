@@ -153,7 +153,7 @@ function rib_outer_fill_span_at(bottom_span, top_span, step) =
 // is the parts object. Change true/false by part name to export or inspect.
 parts = [
     ["bottom", true],
-    ["top_lid", true],
+    ["top_lid", false],
     ["front", true],
     ["back", true],
     ["left", true],
