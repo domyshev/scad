@@ -137,6 +137,85 @@ render_scene() {
     jq -e '.geometry.dimensions == 3' "$summary_json" >/dev/null
 }
 
+render_scene_variant() {
+    local output_name="$1"
+    local scene_name="$2"
+    shift 2
+
+    local output_stl="$tmp_dir/${output_name}.stl"
+    local summary_json="$tmp_dir/${output_name}.json"
+    local render_log="$tmp_dir/${output_name}.log"
+    local extra_definitions=()
+
+    while [[ "$#" -gt 0 ]]; do
+        extra_definitions+=( -D "$1" )
+        shift
+    done
+
+    if ! openscad \
+        --backend CGAL \
+        --export-format asciistl \
+        --hardwarnings \
+        --summary all \
+        --summary-file "$summary_json" \
+        -o "$output_stl" \
+        -D "scene=\"$scene_name\"" \
+        -D 'show_hardware=false' \
+        "${extra_definitions[@]}" \
+        "$source_model" >"$render_log" 2>&1; then
+        cat "$render_log" >&2
+        exit 1
+    fi
+
+    if [[ ! -s "$output_stl" ]]; then
+        echo "FAIL: scene $scene_name produced no STL geometry" >&2
+        exit 1
+    fi
+
+    jq -e '.geometry.dimensions == 3' "$summary_json" >/dev/null
+}
+
+assert_empty_scene() {
+    local output_name="$1"
+    local scene_name="$2"
+    shift 2
+
+    local output_stl="$tmp_dir/${output_name}.stl"
+    local render_log="$tmp_dir/${output_name}.log"
+    local extra_definitions=()
+
+    while [[ "$#" -gt 0 ]]; do
+        extra_definitions+=( -D "$1" )
+        shift
+    done
+
+    if openscad \
+        --backend CGAL \
+        --hardwarnings \
+        -o "$output_stl" \
+        -D "scene=\"$scene_name\"" \
+        -D 'show_hardware=false' \
+        "${extra_definitions[@]}" \
+        "$source_model" >"$render_log" 2>&1; then
+        render_exit=0
+    else
+        render_exit=$?
+    fi
+
+    if [[ -s "$output_stl" ]]; then
+        echo "FAIL: diagnostic scene $scene_name is not empty" >&2
+        exit 1
+    fi
+
+    if [[ "$render_exit" != "1" ]]; then
+        echo "FAIL: unexpected empty-scene result for $scene_name" >&2
+        cat "$render_log" >&2
+        exit 1
+    fi
+
+    grep -q 'Current top level object is empty' "$render_log"
+}
+
 wall_overlap_stl="$tmp_dir/ballast_min_wall_overlap.stl"
 wall_overlap_json="$tmp_dir/ballast_min_wall_overlap.json"
 wall_overlap_log="$tmp_dir/ballast_min_wall_overlap.log"
@@ -371,6 +450,167 @@ if [[ ! -s "$limit_stl" ]]; then
     exit 1
 fi
 
+render_scene "magsafe_fit_gauge"
+render_scene "magsafe_bridge_holder"
+render_scene "magsafe_cup_envelope"
+render_scene "magsafe_cavity_probe"
+render_scene "magsafe_cable_slot_probe"
+render_scene "magsafe_cable_straight_probe"
+render_scene "magsafe_cable_bend_probe"
+render_scene "magsafe_detent_probe"
+render_scene "magsafe_face_plane_probe"
+render_scene "phone_envelope"
+render_scene "apex_key_contact_probe"
+
+render_scene_variant \
+    "magsafe_fit_gauge_a2140" \
+    "magsafe_fit_gauge" \
+    'puck_preset="a2140"'
+render_scene_variant \
+    "magsafe_bridge_holder_a2140" \
+    "magsafe_bridge_holder" \
+    'puck_preset="a2140"'
+render_scene_variant \
+    "magsafe_cavity_probe_a2140" \
+    "magsafe_cavity_probe" \
+    'puck_preset="a2140"'
+
+jq -e '
+  (.geometry.bounding_box.size[0] - 60.0 | fabs) < 0.05 and
+  (.geometry.bounding_box.size[1] - 60.0 | fabs) < 0.05 and
+  (.geometry.bounding_box.size[2] - 6.37 | fabs) < 0.05
+' "$tmp_dir/magsafe_cup_envelope.json" >/dev/null
+
+jq -e '
+  (.geometry.bounding_box.min[2] | fabs) < 0.05
+' "$tmp_dir/magsafe_bridge_holder.json" >/dev/null
+
+jq -e '
+  (.geometry.bounding_box.min[2] | fabs) < 0.05
+' "$tmp_dir/magsafe_bridge_holder_a2140.json" >/dev/null
+
+jq -e '
+  (.geometry.bounding_box.size[0] - 55.85 | fabs) < 0.05 and
+  (.geometry.bounding_box.size[1] - 55.85 | fabs) < 0.05 and
+  (.geometry.bounding_box.size[2] - 3.97 | fabs) < 0.05
+' "$tmp_dir/magsafe_cavity_probe.json" >/dev/null
+
+jq -e '
+  (.geometry.bounding_box.size[0] - 56.25 | fabs) < 0.05 and
+  (.geometry.bounding_box.size[1] - 56.25 | fabs) < 0.05 and
+  (.geometry.bounding_box.size[2] - 4.90 | fabs) < 0.05
+' "$tmp_dir/magsafe_cavity_probe_a2140.json" >/dev/null
+
+jq -e '
+  (.geometry.bounding_box.size[1] - 4.10 | fabs) < 0.05
+' "$tmp_dir/magsafe_cable_slot_probe.json" >/dev/null
+
+jq -e '
+  (.geometry.bounding_box.size[0] - 20.0 | fabs) < 0.05 and
+  (.geometry.bounding_box.size[1] - 4.10 | fabs) < 0.05
+' "$tmp_dir/magsafe_cable_straight_probe.json" >/dev/null
+
+jq -e '
+  (.geometry.bounding_box.size[0] - 14.05 | fabs) < 0.05 and
+  (.geometry.bounding_box.size[2] - 14.05 | fabs) < 0.05
+' "$tmp_dir/magsafe_cable_bend_probe.json" >/dev/null
+
+bend_probe_volume="$(
+    ascii_stl_volume "$tmp_dir/magsafe_cable_bend_probe.stl"
+)"
+python3 - "$bend_probe_volume" <<'PY'
+import math
+import sys
+
+actual = float(sys.argv[1])
+radius = 12.0
+slot_width = 4.1
+expected = (
+    math.pi
+    * ((radius + slot_width / 2) ** 2 - (radius - slot_width / 2) ** 2)
+    / 4
+    * slot_width
+)
+if abs(actual - expected) > 1.0:
+    raise SystemExit(
+        f"bend probe volume {actual:.3f} does not encode a 12 mm open bend"
+    )
+PY
+
+for magsafe_part in \
+    magsafe_fit_gauge \
+    magsafe_fit_gauge_a2140 \
+    magsafe_bridge_holder \
+    magsafe_bridge_holder_a2140; do
+    jq -e '.geometry.simple == true' \
+        "$tmp_dir/${magsafe_part}.json" >/dev/null
+
+    magsafe_components="$(
+        count_ascii_stl_edge_components "$tmp_dir/${magsafe_part}.stl"
+    )"
+    if [[ "$magsafe_components" != "1" ]]; then
+        echo \
+            "FAIL: $magsafe_part exports as $magsafe_components disconnected STL shells" \
+            >&2
+        exit 1
+    fi
+done
+
+detent_components="$(
+    count_ascii_stl_edge_components "$tmp_dir/magsafe_detent_probe.stl"
+)"
+if [[ "$detent_components" != "3" ]]; then
+    echo "FAIL: MagSafe cup has $detent_components detents instead of 3" >&2
+    exit 1
+fi
+
+jq -e '
+  .geometry.bounding_box.min[2] >= 8.0
+' "$tmp_dir/phone_envelope.json" >/dev/null
+
+python3 - "$tmp_dir/magsafe_face_plane_probe.json" <<'PY'
+import json
+import math
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as summary_file:
+    bounds = json.load(summary_file)["geometry"]["bounding_box"]
+
+center = [
+    (minimum + maximum) / 2
+    for minimum, maximum in zip(bounds["min"], bounds["max"])
+]
+if any(abs(actual - expected) > 0.05 for actual, expected in zip(
+    center, (15.0, 0.0, 96.0)
+)):
+    raise SystemExit(f"MagSafe face center is {center}, not [15, 0, 96]")
+
+face_angle = math.degrees(math.atan2(
+    bounds["size"][2], bounds["size"][0]
+))
+if abs(face_angle - 75.0) > 0.25:
+    raise SystemExit(f"MagSafe face is {face_angle:.3f} degrees to the table")
+PY
+
+key_contact_components="$(
+    count_ascii_stl_edge_components "$tmp_dir/apex_key_contact_probe.stl"
+)"
+if [[ "$key_contact_components" != "4" ]]; then
+    echo \
+        "FAIL: staggered apex keys reference $key_contact_components link faces instead of 4" \
+        >&2
+    exit 1
+fi
+
+assert_empty_scene \
+    "phone_table_overlap" \
+    "phone_table_overlap" \
+    'holder_collision_probe=0.05'
+assert_empty_scene \
+    "frame_holder_overlap" \
+    "frame_holder_overlap" \
+    'holder_collision_probe=0.05'
+
 printf \
-    'PASS: triangular MagSafe stand frame, spacer, and ballast geometry are valid (fillable volume %.3f mm3)\n' \
+    'PASS: triangular MagSafe stand frame, ballast, keyed MagSafe holder, and both fit presets are valid (fillable volume %.3f mm3)\n' \
     "$fillable_volume"
