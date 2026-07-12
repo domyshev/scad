@@ -442,6 +442,6 @@ git commit -m "Document MagSafe stand printing and assembly" \
   -m "Add the complete printed and metal hardware BOM, PETG orientations, fit-coupon-first workflow, frame and ballast assembly sequence, 800 g minimum mass target, edge-peel usage limit, artifact map and fresh verification commands. Mark all implementation-plan tasks complete."
 ```
 
-- [x] **Step 5: Request code review, address findings, verify again, and push**
+- [ ] **Step 5: Push after GitHub authentication is restored**
 
-Use the `superpowers:requesting-code-review` skill against the complete diff from `fc84556` through `HEAD`. Apply only technically validated findings. Re-run both full test suites and `git diff --check`, then push `main` to `origin` only after all checks pass.
+The user disabled subagents, so the final review and verification were performed directly. Both full suites and the artifact checks pass. Push `main` to `origin` after restoring a GitHub-authorized SSH key or HTTPS credential; the current environment returns `Permission denied (publickey)` and has no HTTPS username/token.
