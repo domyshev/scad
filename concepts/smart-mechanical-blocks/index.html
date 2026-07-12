@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Умный механический конструктор</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #cbd5e1;
+      --paper: #ffffff;
+      --wash: #f8fafc;
+      --accent: #2563eb;
+      --amber: #facc15;
+      --blue: #93c5fd;
+      --orange: #f97316;
+      --green: #22c55e;
+      --violet: #a855f7;
+      --red: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #eef2f7;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+
+    main {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 900px;
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1.02;
+      letter-spacing: 0;
+      margin-bottom: 14px;
+    }
+
+    h2 {
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    p {
+      color: var(--muted);
+    }
+
+    .lede {
+      max-width: 820px;
+      font-size: 19px;
+      margin-bottom: 24px;
+    }
+
+    .band {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 18px 48px rgba(15, 23, 42, .10);
+      padding: 22px;
+      margin-bottom: 22px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(280px, .9fr) minmax(360px, 1.1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .hero-stage,
+    .diagram {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(15, 23, 42, .06) 1px, transparent 1px) 0 0 / 28px 28px,
+        linear-gradient(0deg, rgba(15, 23, 42, .06) 1px, transparent 1px) 0 0 / 28px 28px,
+        var(--wash);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .hero-stage {
+      min-height: 260px;
+    }
+
+    .block {
+      position: absolute;
+      width: 178px;
+      height: 96px;
+      top: 82px;
+      border: 2px solid var(--ink);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #fef3c7, var(--amber));
+      box-shadow: 0 16px 24px rgba(15, 23, 42, .14);
+    }
+
+    .block.a {
+      left: 60px;
+    }
+
+    .block.b {
+      right: 60px;
+      background: linear-gradient(180deg, #dbeafe, #60a5fa);
+    }
+
+    .block:before {
+      content: "";
+      position: absolute;
+      inset: 23px 33px;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .62);
+    }
+
+    .block.a:after {
+      content: "";
+      position: absolute;
+      right: -34px;
+      top: 26px;
+      width: 52px;
+      height: 40px;
+      border: 2px solid var(--ink);
+      border-radius: 4px 16px 16px 4px;
+      background: var(--orange);
+    }
+
+    .block.b:after {
+      content: "";
+      position: absolute;
+      left: -35px;
+      top: 24px;
+      width: 52px;
+      height: 44px;
+      border: 2px solid var(--ink);
+      border-radius: 18px 4px 4px 18px;
+      background: #eff6ff;
+    }
+
+    .kernel-grid,
+    .lock-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .kernel-grid {
+      grid-template-columns: repeat(4, minmax(170px, 1fr));
+    }
+
+    .lock-grid {
+      grid-template-columns: repeat(5, minmax(170px, 1fr));
+    }
+
+    .card {
+      min-height: 100%;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px rgba(15, 23, 42, .14);
+    }
+
+    .card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, .18), 0 16px 34px rgba(15, 23, 42, .14);
+    }
+
+    .card p {
+      font-size: 13px;
+      margin-bottom: 0;
+    }
+
+    .diagram {
+      height: 126px;
+      margin-bottom: 12px;
+    }
+
+    .mini {
+      position: absolute;
+      top: 38px;
+      width: 72px;
+      height: 52px;
+      border: 2px solid var(--ink);
+      border-radius: 5px;
+      background: var(--amber);
+    }
+
+    .left {
+      left: 18px;
+    }
+
+    .right {
+      right: 18px;
+      background: var(--blue);
+    }
+
+    .arrow {
+      position: absolute;
+      left: 50%;
+      top: 62px;
+      width: 32px;
+      height: 2px;
+      margin-left: -16px;
+      background: var(--ink);
+    }
+
+    .arrow:after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border-left: 8px solid var(--ink);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .turn {
+      position: absolute;
+      left: 50%;
+      top: 19px;
+      width: 50px;
+      height: 50px;
+      margin-left: -25px;
+      border: 3px solid var(--ink);
+      border-left-color: transparent;
+      border-radius: 50%;
+    }
+
+    .turn:after {
+      content: "";
+      position: absolute;
+      right: 1px;
+      top: 2px;
+      border-left: 8px solid var(--ink);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      transform: rotate(42deg);
+    }
+
+    .gear {
+      position: absolute;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, #fff 0 18%, transparent 19%),
+        repeating-conic-gradient(var(--orange) 0 8deg, #b45309 8deg 14deg, transparent 14deg 20deg),
+        radial-gradient(circle, var(--orange) 0 48%, transparent 49%);
+      top: 34px;
+      left: 30px;
+    }
+
+    .rack {
+      position: absolute;
+      left: 86px;
+      right: 16px;
+      top: 55px;
+      height: 18px;
+      background:
+        linear-gradient(135deg, transparent 0 32%, #334155 33% 66%, transparent 67%) 0 0 / 18px 18px repeat-x,
+        #cbd5e1;
+      border: 1px solid #334155;
+    }
+
+    .index-wheel {
+      position: absolute;
+      inset: 24px 0 0 50%;
+      width: 74px;
+      height: 74px;
+      margin-left: -37px;
+      border-radius: 50%;
+      background: repeating-conic-gradient(#14b8a6 0 10deg, #0f766e 10deg 15deg);
+    }
+
+    .index-wheel:after {
+      content: "";
+      position: absolute;
+      inset: 23px;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: #fff;
+    }
+
+    .cam {
+      position: absolute;
+      left: 42px;
+      top: 29px;
+      width: 70px;
+      height: 70px;
+      border: 2px solid var(--ink);
+      border-radius: 55% 45% 50% 50%;
+      background: var(--violet);
+      transform: rotate(22deg);
+    }
+
+    .jaw {
+      position: absolute;
+      right: 28px;
+      top: 33px;
+      width: 42px;
+      height: 60px;
+      border: 8px solid #334155;
+      border-left: 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .geneva {
+      position: absolute;
+      left: 38px;
+      top: 27px;
+      width: 74px;
+      height: 74px;
+      border: 2px solid #166534;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, #fff 0 19%, transparent 20%),
+        conic-gradient(var(--green) 0 22%, #f8fafc 22% 28%, var(--green) 28% 47%, #f8fafc 47% 53%, var(--green) 53% 72%, #f8fafc 72% 78%, var(--green) 78%);
+    }
+
+    .rail-male:after {
+      content: "";
+      position: absolute;
+      right: -18px;
+      top: 12px;
+      width: 26px;
+      height: 28px;
+      transform: skewX(-14deg);
+      background: var(--orange);
+      border: 2px solid var(--ink);
+    }
+
+    .rail-female:before {
+      content: "";
+      position: absolute;
+      left: -18px;
+      top: 10px;
+      width: 30px;
+      height: 32px;
+      transform: skewX(-14deg);
+      background: var(--wash);
+      border: 2px solid var(--ink);
+    }
+
+    .bayonet-pin:after {
+      content: "";
+      position: absolute;
+      right: -17px;
+      top: 18px;
+      width: 30px;
+      height: 16px;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background: var(--red);
+    }
+
+    .bayonet-slot:before {
+      content: "";
+      position: absolute;
+      left: -17px;
+      top: 13px;
+      width: 30px;
+      height: 26px;
+      border: 2px solid var(--ink);
+      border-left: 0;
+      border-radius: 0 999px 999px 0;
+      background: var(--wash);
+    }
+
+    .snap-hook:after {
+      content: "";
+      position: absolute;
+      right: -18px;
+      top: 8px;
+      width: 26px;
+      height: 38px;
+      border: 2px solid var(--ink);
+      border-left: 0;
+      border-radius: 0 4px 15px 0;
+      background: var(--green);
+    }
+
+    .snap-pocket:before {
+      content: "";
+      position: absolute;
+      left: -16px;
+      top: 11px;
+      width: 27px;
+      height: 32px;
+      border: 2px solid var(--ink);
+      background: var(--wash);
+    }
+
+    .wedge:after {
+      content: "";
+      position: absolute;
+      right: -22px;
+      top: 9px;
+      width: 0;
+      height: 0;
+      border-left: 34px solid var(--violet);
+      border-top: 18px solid transparent;
+      border-bottom: 18px solid transparent;
+      filter: drop-shadow(2px 0 0 var(--ink)) drop-shadow(0 2px 0 var(--ink));
+    }
+
+    .slot:after {
+      content: "";
+      position: absolute;
+      right: -21px;
+      top: 12px;
+      width: 35px;
+      height: 30px;
+      background: linear-gradient(90deg, #14b8a6 0 38%, transparent 39% 61%, #14b8a6 62%);
+      border-top: 2px solid var(--ink);
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .pins:before,
+    .pins:after,
+    .holes:before,
+    .holes:after {
+      content: "";
+      position: absolute;
+      width: 24px;
+      height: 12px;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+    }
+
+    .pins:before,
+    .pins:after {
+      right: -13px;
+      background: var(--orange);
+    }
+
+    .holes:before,
+    .holes:after {
+      left: -13px;
+      background: var(--wash);
+    }
+
+    .pins:before,
+    .holes:before {
+      top: 12px;
+    }
+
+    .pins:after,
+    .holes:after {
+      bottom: 12px;
+    }
+
+    .thread:after,
+    .thread-socket:before {
+      content: "";
+      position: absolute;
+      top: 8px;
+      width: 40px;
+      height: 38px;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+    }
+
+    .thread:after {
+      right: -24px;
+      background: repeating-linear-gradient(0deg, #fb923c 0 4px, #c2410c 4px 7px);
+    }
+
+    .thread-socket:before {
+      left: -20px;
+      background: repeating-linear-gradient(0deg, var(--wash) 0 4px, #cbd5e1 4px 7px);
+    }
+
+    .dimple:after,
+    .detent:before {
+      content: "";
+      position: absolute;
+      top: 16px;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+    }
+
+    .dimple:after {
+      right: -16px;
+      width: 24px;
+      height: 18px;
+      background: #eab308;
+    }
+
+    .detent:before {
+      left: -12px;
+      width: 28px;
+      height: 24px;
+      background: var(--wash);
+    }
+
+    .strap:after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -18px;
+      width: 110px;
+      height: 90px;
+      margin-left: -55px;
+      border: 8px solid #475569;
+      border-bottom: 0;
+      border-radius: 16px 16px 0 0;
+    }
+
+    .cam-dot {
+      position: absolute;
+      left: 50%;
+      top: 52px;
+      width: 34px;
+      height: 34px;
+      margin-left: -17px;
+      border: 2px solid var(--ink);
+      border-radius: 50% 42% 50% 58%;
+      background: var(--orange);
+      transform: rotate(28deg);
+    }
+
+    .teeth:after {
+      content: "";
+      position: absolute;
+      right: -22px;
+      top: 11px;
+      width: 36px;
+      height: 32px;
+      background:
+        linear-gradient(135deg, transparent 0 36%, var(--red) 37% 64%, transparent 65%) 0 0 / 12px 16px repeat-y,
+        #fecaca;
+      border: 2px solid var(--ink);
+    }
+
+    .teeth-seat:before {
+      content: "";
+      position: absolute;
+      left: -21px;
+      top: 11px;
+      width: 36px;
+      height: 32px;
+      background:
+        linear-gradient(135deg, transparent 0 36%, var(--wash) 37% 64%, transparent 65%) 0 0 / 12px 16px repeat-y,
+        #fee2e2;
+      border: 2px solid var(--ink);
+    }
+
+    .tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .tags span {
+      font-size: 11px;
+      font-weight: 700;
+      color: #334155;
+      background: #e2e8f0;
+      padding: 4px 7px;
+      border-radius: 999px;
+    }
+
+    .recommendation {
+      border-left: 5px solid var(--accent);
+    }
+
+    @media (max-width: 1120px) {
+      .kernel-grid,
+      .lock-grid {
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      main {
+        padding: 18px;
+      }
+
+      .split,
+      .kernel-grid,
+      .lock-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .block.a {
+        left: 24px;
+      }
+
+      .block.b {
+        right: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Умный механический конструктор без электроники</h1>
+    <p class="lede">Набросок системы печатных параллелепипедов, которые стыкуются не как LEGO, а через силовые замки, направляющие, клинья, резьбы и кинематические интерфейсы. Цель - превращать обычные предметы дома в механически полезные вещи.</p>
+
+    <section class="band split">
+      <div>
+        <h2>Базовая деталь</h2>
+        <p>Параллелепипед получает несколько стандартных зон: плоскую силовую грань, боковой замок, центральную втулку или отверстие, и место под вторичный фиксатор. Один и тот же блок может быть кирпичом, адаптером, полочным узлом или корпусом механизма.</p>
+      </div>
+      <div class="hero-stage" aria-label="Два базовых блока со стыковочным замком">
+        <div class="block a"></div>
+        <div class="block b"></div>
+      </div>
+    </section>
+
+    <section class="band">
+      <h2>Механические ядра системы</h2>
+      <p>Это не финальный набор деталей, а направления, которые задают характер конструктора.</p>
+      <div class="kernel-grid">
+        <article class="card selectable">
+          <div class="diagram"><div class="gear"></div><div class="rack"></div></div>
+          <h3>Рейка + шестерня</h3>
+          <p>Выдвижные полки, подъемные лотки, регулируемые кронштейны и линейное движение от ручки.</p>
+        </article>
+        <article class="card selectable">
+          <div class="diagram"><div class="index-wheel"></div></div>
+          <h3>Индексный шарнир</h3>
+          <p>Рычаги и держатели щелкают по углам: крючки, подставки, подвесы, складные опоры.</p>
+        </article>
+        <article class="card selectable">
+          <div class="diagram"><div class="cam"></div><div class="jaw"></div></div>
+          <h3>Кулачковый зажим</h3>
+          <p>Повернул ручку - модуль схватил трубу, край полки, ножку стола или бортик горшка.</p>
+        </article>
+        <article class="card selectable">
+          <div class="diagram"><div class="geneva"></div></div>
+          <h3>Храповик / мальтийский крест</h3>
+          <p>Пошаговый поворот для каруселей, органайзеров, дозаторов и ручных кинетических сцен.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="band">
+      <h2>10 типов замков для параллелепипеда</h2>
+      <p>Клик по карточке подсвечивает понравившийся принцип. Это помогает выбрать 2-3 интерфейса для первого печатного прототипа.</p>
+      <div class="lock-grid">
+        <article class="card selectable">
+          <div class="diagram"><div class="mini left rail-male"></div><div class="arrow"></div><div class="mini right rail-female"></div></div>
+          <h3>1. Ласточкин хвост</h3>
+          <p>Один блок въезжает в другой сбоку. Прочен на отрыв, хорош для полок, направляющих и линейных модулей.</p>
+          <div class="tags"><span>сдвиг</span><span>силовой</span></div>
+        </article>
+        <article class="card selectable">
+          <div class="diagram"><div class="turn"></div><div class="mini left bayonet-pin"></div><div class="mini right bayonet-slot"></div></div>
+          <h3>2. Байонет 90°</h3>
+          <p>Вставил выступы в пазы, повернул на четверть оборота, получил быстрый съемный замок.</p>
+          <div class="tags"><span>поворот</span><span>быстро</span></div>
+        </article>
+        <article class="card selectable">
+          <div class="diagram"><div class="mini left snap-hook"></div><div class="arrow"></div><div class="mini right snap-pocket"></div></div>
+          <h3>3. Упругая защелка</h3>
+          <p>PETG-язычок щелкает в окно. Хорош для легких модулей, крышек и быстрых перестановок.</p>
+          <div class="tags"><span>щелчок</span><span>без винтов</span></div>
+        </article>
+        <article class="card selectable">
+          <div class="diagram"><div class="mini left wedge"></div><div class="arrow"></div><div class="mini right"></div></div>
+          <h3>4. Клин-шпонка</h3>
+          <p>Два блока совмещаются, а отдельный клин затягивает соединение и компенсирует люфт после печати.</p>
+          <div class="tags"><span>жестко</span><span>регулируемо</span></div>
+        </article>
+        <article class="card selectable">
+          <div class="diagram"><div class="mini left slot"></div><div class="arrow"></div><div class="mini right"></div></div>
+          <h3>5. T-паз и сухарь</h3>
+          <p>Как мини-станочный профиль: блоки скользят по пазу, фиксируются винтом или печатным сухарем.</p>
+          <div class="tags"><span>рейки</span><span>настройка</span></div>
+        </article>
+        <article class="card selectable">
+          <div class="diagram"><div class="mini left pins"></div><div class="arrow"></div><div class="mini right holes"></div></div>
+          <h3>6. Два штифта</h3>
+          <p>Пара выступов задает позицию и не дает вращаться, а винт или клипса держит от разъема.</p>
+          <div class="tags"><span>точность</span><span>M4</span></div>
+        </article>
+        <article class="card selectable">
+          <div class="diagram"><div class="turn"></div><div class="mini left thread"></div><div class="mini right thread-socket"></div></div>
+          <h3>7. Резьбовая втулка</h3>
+          <p>Один блок вкручивается в другой. Медленнее, зато понятно, надежно и ложится на текущие резьбовые тесты.</p>
+          <div class="tags"><span>M10/M12</span><span>надежно</span></div>
+        </article>
+        <article class="card selectable">
+          <div class="diagram"><div class="mini left dimple"></div><div class="arrow"></div><div class="mini right detent"></div></div>
+          <h3>8. Шарик/лунка</h3>
+          <p>Позиционирование с приятным кликом для вращающихся полок, ручных механизмов и индексных углов.</p>
+          <div class="tags"><span>индекс</span><span>клик</span></div>
+        </article>
+        <article class="card selectable">
+          <div class="diagram"><div class="mini left"></div><div class="mini right"></div><div class="strap"></div><div class="cam-dot"></div></div>
+          <h3>9. Хомут + кулачок</h3>
+          <p>Блоки обнимают обычный предмет: ручку швабры, трубу, край полки, ножку стола или горшок.</p>
+          <div class="tags"><span>без сверления</span><span>зажим</span></div>
+        </article>
+        <article class="card selectable">
+          <div class="diagram"><div class="mini left teeth"></div><div class="arrow"></div><div class="mini right teeth-seat"></div></div>
+          <h3>10. Зубчатая рейка</h3>
+          <p>Блоки соединяются как гребенки. Можно фиксировать шаг, делать направляющие и добавить шестерню как привод.</p>
+          <div class="tags"><span>шестерни</span><span>вау</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="band recommendation">
+      <h2>Ставка для первого прототипа</h2>
+      <p><strong>1 + 4 + 10:</strong> ласточкин хвост как силовая стыковка, клин-шпонка как устранение люфта, зубчатая рейка как мост к будущим шестеренкам. Это все еще простой параллелепипед, но уже с ощущением настоящей механической системы.</p>
+    </section>
+  </main>
+
+  <script>
+    for (const card of document.querySelectorAll(".selectable")) {
+      card.addEventListener("click", () => {
+        card.classList.toggle("selected");
+      });
+    }
+  </script>
+</body>
+</html>
