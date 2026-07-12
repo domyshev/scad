@@ -1183,6 +1183,81 @@ module magsafe_face_plane_probe() {
         cube([20, 4, 0.05], center = true);
 }
 
+module stand_spacers(offset_y = 0) {
+    for (node_index = [1, 3])
+        let(node = frame_nodes[node_index])
+            translate([node[0], offset_y, node[1]])
+                joint_spacer();
+}
+
+module magsafe_puck_preview(
+    selected_puck_d = active_puck_d(),
+    selected_puck_h = active_puck_h()
+) {
+    magsafe_pose()
+        translate([
+            0,
+            0,
+            -magsafe_puck_face_z(selected_puck_h) + magsafe_back_wall
+        ])
+            cylinder(d = selected_puck_d, h = selected_puck_h);
+}
+
+module stand_assembly(
+    exploded = 0,
+    include_hardware = true,
+    include_phone = true
+) {
+    frame_spread = exploded;
+    holder_lift = exploded * 0.7;
+    lid_lift = exploded * 0.45;
+    cassette_drop = exploded * 0.35;
+
+    color(frame_color) {
+        translate([0, -frame_spread, 0])
+            triangle_frame(left_frame_reference_y);
+        translate([0, frame_spread, 0])
+            triangle_frame(right_frame_reference_y);
+    }
+
+    color("#334155")
+        translate([0, 0, -cassette_drop])
+            ballast_cassette_body();
+
+    color("#64748B")
+        translate([0, 0, lid_lift])
+            ballast_cassette_lid();
+
+    color(spacer_color)
+        stand_spacers();
+
+    color("#2563EB")
+        translate([0, 0, holder_lift])
+            magsafe_bridge_holder();
+
+    color("#F8FAFC")
+        translate([0, 0, holder_lift])
+            magsafe_puck_preview();
+
+    if (include_hardware)
+        color(hardware_color)
+            for (node = frame_nodes)
+                cross_rod(node);
+
+    if (include_phone)
+        color([0.12, 0.15, 0.20, 0.32])
+            translate([0, 0, holder_lift])
+                phone_envelope();
+}
+
+module stand_preview() {
+    stand_assembly();
+}
+
+module stand_exploded() {
+    stand_assembly(exploded = 20, include_phone = false);
+}
+
 if (scene == "frame_pair") {
     frame_pair();
 } else if (scene == "joint_spacer") {
@@ -1228,6 +1303,10 @@ if (scene == "frame_pair") {
     frame_holder_overlap();
 } else if (scene == "apex_key_contact_probe") {
     apex_key_contact_probe();
+} else if (scene == "stand_preview") {
+    stand_preview();
+} else if (scene == "stand_exploded") {
+    stand_exploded();
 } else {
     assert(false, str("Unknown scene: ", scene));
 }

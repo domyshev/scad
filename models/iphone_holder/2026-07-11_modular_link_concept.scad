@@ -430,8 +430,19 @@ module presentation() {
     }
 }
 
+module fit_pair_print() {
+    // Two identical bed-flat links for the first physical fit/load coupon.
+    translate([0, -14, 0])
+        modular_link();
+
+    translate([0, 14, 0])
+        modular_link();
+}
+
 if (scene == "single_link") {
     modular_link();
+} else if (scene == "fit_pair_print") {
+    fit_pair_print();
 } else if (scene == "exploded_joint") {
     exploded_joint();
 } else if (scene == "assembled_joint") {

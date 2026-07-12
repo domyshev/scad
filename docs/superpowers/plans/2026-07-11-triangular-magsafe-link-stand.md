@@ -39,7 +39,7 @@
 - Produces: `physical_link_pair(angle, separation)` and `joint_overlap()` using a physical `rotate([180, 0, 0])` transform.
 - Consumes: no files from later tasks.
 
-- [ ] **Step 1: Add a physical-flip regression fixture and make the shell test use CGAL**
+- [x] **Step 1: Add a physical-flip regression fixture and make the shell test use CGAL**
 
 ```scad
 // tests/fixtures/2026-07-11_physical_link_overlap.scad
@@ -60,7 +60,7 @@ intersection() {
 
 In `tests/2026-07-11_modular_link_concept_test.sh`, render this fixture for every angle in `0 15 ... 150` with `--backend CGAL`; a non-empty STL is a failure. Keep the 7.5° misphase check non-empty.
 
-- [ ] **Step 2: Run the physical-flip test and verify the current model fails**
+- [x] **Step 2: Run the physical-flip test and verify the current model fails**
 
 Run:
 
@@ -70,7 +70,7 @@ bash tests/2026-07-11_modular_link_concept_test.sh
 
 Expected: FAIL at the first physical-flip overlap, with a non-empty intersection near 4.185 mm³.
 
-- [ ] **Step 3: Replace chiral sector diagonals with reflection-symmetric center fans**
+- [x] **Step 3: Replace chiral sector diagonals with reflection-symmetric center fans**
 
 Add public accessors and replace the two-triangle top sector with four triangles around a midpoint. Apply the same reflection-symmetric fan construction to the top, bottom, outer, and inner sector surfaces so neither backend chooses a chiral diagonal.
 
@@ -104,7 +104,7 @@ translate([0, 0, assembly_stack_h + separation])
                 modular_link();
 ```
 
-- [ ] **Step 4: Run the complete link test and verify green geometry**
+- [x] **Step 4: Run the complete link test and verify green geometry**
 
 Run:
 
@@ -114,7 +114,7 @@ bash tests/2026-07-11_modular_link_concept_test.sh
 
 Expected: PASS for dimensions, watertight one-shell link, all eleven indexed physical assemblies, immediate flank engagement around 0°, and rejected 7.5°/165° inputs.
 
-- [ ] **Step 5: Commit the repaired link**
+- [x] **Step 5: Commit the repaired link**
 
 ```bash
 git add models/iphone_holder/2026-07-11_modular_link_concept.scad \
@@ -135,7 +135,7 @@ git commit -m "Repair physical modular-link coupling" \
 - Produces: `frame_link(node_a, node_b, upper_layer)`, `triangle_frame(y_reference)`, `frame_pair()`, `joint_spacer()`, `cross_rod(node)`, and scene names `frame_pair`, `joint_spacer`, `frame_envelope`.
 - Produces shared constants `frame_side = 80`, `frame_depth = 90`, `frame_inner_gap = 64.4`, `frame_height = 80 * sqrt(3) / 2`, and ordered `frame_nodes`.
 
-- [ ] **Step 1: Write failing frame-envelope and scene tests**
+- [x] **Step 1: Write failing frame-envelope and scene tests**
 
 The shell test must render every named scene with `--backend CGAL --hardwarnings --summary all`. Assert:
 
@@ -149,7 +149,7 @@ jq -e '
 
 Also render `joint_spacer` and require one simple 3D shell with a 64.4 ± 0.05 mm long axis and a 4.8 mm nominal teardrop through-hole.
 
-- [ ] **Step 2: Run the stand test and verify missing scenes fail**
+- [x] **Step 2: Run the stand test and verify missing scenes fail**
 
 Run:
 
@@ -159,7 +159,7 @@ bash tests/2026-07-11_triangular_magsafe_stand_test.sh
 
 Expected: FAIL because `2026-07-11_triangular_magsafe_stand.scad` or its scenes do not exist.
 
-- [ ] **Step 3: Implement the frame nodes and alternating link layers**
+- [x] **Step 3: Implement the frame nodes and alternating link layers**
 
 Use these exact centerline nodes in clockwise order:
 
@@ -193,11 +193,11 @@ module frame_link(node_a, node_b, upper_layer = false) {
 
 Alternate `upper_layer` by segment index. Place frame reference planes at `y = -32.2` and `y = 45`, producing outer faces at -45 and +45 and an inner clear gap of 64.4 mm.
 
-- [ ] **Step 4: Add preview rods and support-free spacer**
+- [x] **Step 4: Add preview rods and support-free spacer**
 
 Use a 64.4 mm long rectangular spacer with rounded outside corners and a horizontal 4.8 mm teardrop bore. In assembly scenes, show six 4 mm rods centered at the six frame nodes; hardware is preview geometry only and never unioned with printable STL scenes.
 
-- [ ] **Step 5: Run tests and commit the skeleton**
+- [x] **Step 5: Run tests and commit the skeleton**
 
 Run:
 
@@ -227,11 +227,11 @@ git commit -m "Build triangular modular-link frame" \
 - Consumes: `frame_inner_gap`, lower frame nodes at `[-40, 0]`, `[0, 0]`, `[40, 0]`.
 - Produces: `ballast_outer()`, `ballast_void()`, `ballast_cassette_body()`, `ballast_cassette_lid()`, and scenes `ballast_body`, `ballast_lid`, `ballast_void`, `frame_ballast_overlap`.
 
-- [ ] **Step 1: Add failing cavity-volume and collision assertions**
+- [x] **Step 1: Add failing cavity-volume and collision assertions**
 
 Render `ballast_void` with JSON summary and require volume at least 130000 mm³. Render `frame_ballast_overlap` with a 0.05 mm contact probe; the expected result is an empty top-level object. Render body and lid separately and require simple one-shell geometry with positive volume.
 
-- [ ] **Step 2: Run the stand test and verify the missing ballast scenes fail**
+- [x] **Step 2: Run the stand test and verify the missing ballast scenes fail**
 
 Run:
 
@@ -241,7 +241,7 @@ bash tests/2026-07-11_triangular_magsafe_stand_test.sh
 
 Expected: FAIL because `ballast_void` is unknown.
 
-- [ ] **Step 3: Implement the trapezoidal shell, three M4 sleeves, and open cavity**
+- [x] **Step 3: Implement the trapezoidal shell, three M4 sleeves, and open cavity**
 
 Use this nominal outer side profile in the `x/z` plane and extrude it 64.0 mm across `y`:
 
@@ -256,11 +256,11 @@ ballast_profile = [
 
 Subtract a 2.4 mm side/end-wall cavity above a 3 mm bottom. Union three 10 mm OD sleeves at x = -40, 0, +40 and z = 0, each 64.4 mm long, then subtract a 4.8 mm horizontal teardrop bore. Keep 4.5 mm solid material around every sleeve. The `ballast_void()` diagnostic scene is the actual fillable cavity after subtracting the sleeves and lid rails, not a bounding-box estimate.
 
-- [ ] **Step 4: Implement the sliding lid and enforce print clearances**
+- [x] **Step 4: Implement the sliding lid and enforce print clearances**
 
 Use 1.3 mm deep rails, 0.28 mm clearance per side, a 2.4 mm plate, a stepped labyrinth edge, and a 1.9 mm transverse hole for a 1.75 mm filament retaining pin. The body prints with its flat bottom on the bed; the lid prints flat.
 
-- [ ] **Step 5: Run tests and commit the cassette**
+- [x] **Step 5: Run tests and commit the cassette**
 
 Run:
 
@@ -289,11 +289,11 @@ git commit -m "Add internal steel-ballast cassette" \
 - Consumes: apex node `[0, frame_height]`, `frame_inner_gap`, one top M4 cross-axis.
 - Produces: `magsafe_cup(puck_d, puck_h)`, `magsafe_fit_gauge(puck_d, puck_h)`, `apex_key()`, `magsafe_bridge_holder()`, `phone_envelope()`, and scenes `magsafe_fit_gauge`, `magsafe_bridge_holder`, `phone_table_overlap`, `frame_holder_overlap`.
 
-- [ ] **Step 1: Add failing MagSafe dimension, table-clearance, and collision tests**
+- [x] **Step 1: Add failing MagSafe dimension, table-clearance, and collision tests**
 
 Render the default fit gauge and holder. Require holder outer cup diameter ≤60.0 mm, default cavity diameter 55.85 ± 0.05 mm, puck recess 3.97 ± 0.05 mm so a 4.37 mm puck is proud by 0.4 mm, and a 4.1 ± 0.05 mm open cable slot. Render `phone_table_overlap` and `frame_holder_overlap`; both must be empty with a 0.05 mm probe. Invoke `puck_preset="a2140"` and assert the cavity changes to 56.25 ± 0.05 mm and depth to 4.90 ± 0.05 mm.
 
-- [ ] **Step 2: Run the stand test and verify the missing MagSafe scene fails**
+- [x] **Step 2: Run the stand test and verify the missing MagSafe scene fails**
 
 Run:
 
@@ -303,15 +303,15 @@ bash tests/2026-07-11_triangular_magsafe_stand_test.sh
 
 Expected: FAIL because `magsafe_fit_gauge` is unknown.
 
-- [ ] **Step 3: Implement the split cup and cable path**
+- [x] **Step 3: Implement the split cup and cable path**
 
 Build a 60 mm OD cup with a 2.4 mm back wall. Subtract `puck_d + 0.35` and stop the wall 0.4 mm below the aluminum face. Add three 120°-spaced PETG detent tabs below the face and subtract a radial 4.1 mm open slot toward the lower cable direction. Add a 20 mm straight cable cradle followed by a 12 mm-radius open guide; do not create a closed USB-C tunnel.
 
-- [ ] **Step 4: Implement the apex bridge and anti-rotation keys**
+- [x] **Step 4: Implement the apex bridge and anti-rotation keys**
 
 Place puck center at `[15, 0, 96]`. Orient the face 75° to the table. Use a 64.4 mm M4 cross-tube through the apex and a thin V-shaped key at each inner frame face; each key bears against both apex link bodies so the holder cannot rotate solely on bolt friction. Connect the tube to the cup back with two symmetric 45° gussets. Provide a separate print transform that places the cup back and bridge ribs on the bed without support.
 
-- [ ] **Step 5: Run tests and commit the MagSafe parts**
+- [x] **Step 5: Run tests and commit the MagSafe parts**
 
 Run:
 
@@ -351,11 +351,11 @@ git commit -m "Add apex MagSafe bridge and gauge" \
 - Consumes: every printable and preview scene from Tasks 1–4.
 - Produces: deterministic dated artifact set and a command-line mesh audit that returns nonzero for a non-watertight mesh, an unexpected component count, non-positive signed volume, or edge incidence other than two.
 
-- [ ] **Step 1: Write the failing artifact-presence and mesh-audit loop**
+- [x] **Step 1: Write the failing artifact-presence and mesh-audit loop**
 
 The test must call the export script in a temporary directory, audit every printable STL, and compare each fresh output byte-for-byte with the stored dated artifact. Each individual part requires exactly one component; `modular_link_fit_pair.stl` requires exactly two. The preview STL is audited for watertight component shells and positive total volume with its explicit assembly component count, and is labelled non-printable in the script output.
 
-- [ ] **Step 2: Run the test and verify missing exporter/artifacts fail**
+- [x] **Step 2: Run the test and verify missing exporter/artifacts fail**
 
 Run:
 
@@ -365,11 +365,11 @@ bash tests/2026-07-11_triangular_magsafe_stand_test.sh
 
 Expected: FAIL because the export script and final artifact set are absent.
 
-- [ ] **Step 3: Implement the standard-library STL auditor**
+- [x] **Step 3: Implement the standard-library STL auditor**
 
 Parse both binary and ASCII STL. Quantize vertices to 1e-6 mm, count each undirected edge, union triangles sharing an edge, calculate signed tetrahedral volume, and report JSON containing `triangles`, `components`, `invalid_edges`, and `volume_mm3`. Accept `--expected-components N`; exit nonzero unless `components == N`, `invalid_edges == 0`, and `volume_mm3 > 0`.
 
-- [ ] **Step 4: Implement deterministic CGAL exports and three PNG views**
+- [x] **Step 4: Implement deterministic CGAL exports and three PNG views**
 
 For each STL use:
 
@@ -380,7 +380,7 @@ openscad --backend CGAL --hardwarnings --export-format binstl \
 
 For renders use `--backend CGAL --render --imgsize=1600,1200 --projection=ortho`, fixed cameras for overall, side, and exploded scenes, and convert to PNG with `sips` only when OpenSCAD emits another bitmap format.
 
-- [ ] **Step 5: Regenerate artifacts, run both suites, and inspect the images**
+- [x] **Step 5: Regenerate artifacts, run both suites, and inspect the images**
 
 Run:
 
@@ -392,7 +392,7 @@ bash tests/2026-07-11_triangular_magsafe_stand_test.sh
 
 Expected: both test scripts PASS; individual-part audits report one component, the fit-pair audit reports two, the preview reports its explicit assembly count, and all report zero invalid edges with positive volume. Open all three PNG files with the workspace image viewer and verify the phone is on the +x side, ballast is visibly inside the lower triangle, both frames are present, the cup is centered across `y`, cable routing is open, and no part floats or intersects.
 
-- [ ] **Step 6: Commit the audited artifact set**
+- [x] **Step 6: Commit the audited artifact set**
 
 ```bash
 git add scripts/2026-07-11_export_triangular_magsafe_stand.sh \
@@ -412,15 +412,15 @@ git commit -m "Export triangular MagSafe stand print set" \
 - Consumes: final dimensions and artifact names from Tasks 1–5.
 - Produces: user-facing BOM, print order, assembly order, ballast target, and clear distinction between printable part STL files and the visual-only assembled STL.
 
-- [ ] **Step 1: Add the exact BOM and print order**
+- [x] **Step 1: Add the exact BOM and print order**
 
 Document 12 links, one cassette body, one lid, two spacers, one bridge/holder, six 105 mm M4 threaded rods, twelve M4 washers, twelve M4 nuts with at least six nyloc nuts, at least 600 g dry steel ballast, four 12–15 mm rubber feet, and the official MagSafe puck. State that the first print is only `modular_link_fit_pair` plus `magsafe_fit_gauge`.
 
-- [ ] **Step 2: Add assembly and use instructions**
+- [x] **Step 2: Add assembly and use instructions**
 
 Document alternating link faces, three lower rods through the cassette sleeves, two side-midpoint spacers, the keyed apex bridge, gradual cross-pattern tightening, steel filling by scale, foam anti-rattle layer, filament lid pin, and edge-peel phone removal. Mark direct pull unsupported without broad removable table adhesive.
 
-- [ ] **Step 3: Run fresh final verification**
+- [x] **Step 3: Run fresh final verification**
 
 Run:
 
@@ -433,7 +433,7 @@ git status --short
 
 Expected: no whitespace errors, both suites PASS, and status contains only the intended README/plan update before the final commit.
 
-- [ ] **Step 4: Mark completed plan checkboxes and commit documentation**
+- [x] **Step 4: Mark completed plan checkboxes and commit documentation**
 
 ```bash
 git add models/iphone_holder/README.md \
@@ -442,6 +442,6 @@ git commit -m "Document MagSafe stand printing and assembly" \
   -m "Add the complete printed and metal hardware BOM, PETG orientations, fit-coupon-first workflow, frame and ballast assembly sequence, 800 g minimum mass target, edge-peel usage limit, artifact map and fresh verification commands. Mark all implementation-plan tasks complete."
 ```
 
-- [ ] **Step 5: Request code review, address findings, verify again, and push**
+- [x] **Step 5: Request code review, address findings, verify again, and push**
 
 Use the `superpowers:requesting-code-review` skill against the complete diff from `fc84556` through `HEAD`. Apply only technically validated findings. Re-run both full test suites and `git diff --check`, then push `main` to `origin` only after all checks pass.

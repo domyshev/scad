@@ -2,6 +2,14 @@
 
 set -euo pipefail
 
+if ! command -v openscad >/dev/null 2>&1 && [[ -x /opt/homebrew/bin/openscad ]]; then
+    export PATH="/opt/homebrew/bin:$PATH"
+fi
+command -v openscad >/dev/null 2>&1 || {
+    echo "FAIL: OpenSCAD is not installed or not on PATH" >&2
+    exit 1
+}
+
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source_model="$repo_root/models/iphone_holder/2026-07-11_triangular_magsafe_stand.scad"
 
